@@ -97,7 +97,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/paymentterms/master")]
         [Authorize]
-        public IActionResult GetSpesificPaymentTerms([FromBody] PaymentTermsParameter paymentTermsParameter)
+        public IActionResult GetSpesificPaymentTerms()
         {
             PaymentTerms paymentTerms = new PaymentTerms();
 
@@ -111,7 +111,7 @@ namespace SFAEndpoint.Controllers
                 {
                     connection.Open();
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_TOP(" + paymentTermsParameter.groupNum + ")";
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_TOP(0)";
 
                     using (var command = new HanaCommand(queryString, connection))
                     {

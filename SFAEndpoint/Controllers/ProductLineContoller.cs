@@ -97,7 +97,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/productline/master")]
         [Authorize]
-        public IActionResult GetSpesificProductLine([FromBody] ProductLineParameter productLineParameter)
+        public IActionResult GetSpesificProductLine()
         {
             ProductLine productLine = new ProductLine();
 
@@ -111,7 +111,7 @@ namespace SFAEndpoint.Controllers
                 {
                     connection.Open();
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_PRODUCT_LINE(" + productLineParameter.code + ")";
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_PRODUCT_LINE(0)";
 
                     using (var command = new HanaCommand(queryString, connection))
                     {

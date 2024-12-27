@@ -99,7 +99,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/salesman/master")]
         [Authorize]
-        public IActionResult GetSpesificSalesman([FromBody] SalesmanParameter salesmanParameter)
+        public async Task<IActionResult> GetSpesificSalesman()
         {
             Data data = new Data();
             Salesman salesman = new Salesman();
@@ -114,7 +114,7 @@ namespace SFAEndpoint.Controllers
                 {
                     connection.Open();
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_SALESMAN(" + salesmanParameter.salesmanCode + ")";
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_SALESMAN(0)";
 
                     using (var command = new HanaCommand(queryString, connection))
                     {

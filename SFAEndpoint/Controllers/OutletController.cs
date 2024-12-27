@@ -105,7 +105,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/outlet/master")]
         [Authorize]
-        public IActionResult GetSpesificOutlet([FromBody] OutletParameter param)
+        public IActionResult GetSpesificOutlet()
         {
             Outlet outlet = new Outlet();
 
@@ -118,7 +118,7 @@ namespace SFAEndpoint.Controllers
                 {
                     connection.Open();
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_OUTLET('" + param.cardCode.ToString() + "')";
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_OUTLET('')";
 
                     using (var command = new HanaCommand(queryString, connection))
                     {
@@ -129,7 +129,7 @@ namespace SFAEndpoint.Controllers
                                 return StatusCode(StatusCodes.Status404NotFound, new StatusResponse
                                 {
                                     responseCode = "404",
-                                    responseMessage = "Outlet with code: " + param.cardCode.ToString() + " not found.",
+                                    responseMessage = "Outlet not found.",
 
                                 });
                             }
@@ -261,7 +261,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/typeoutlet/master")]
         [Authorize]
-        public IActionResult GetSpesificOutletType([FromBody] OutletTypeParameter outletTypeParameter)
+        public IActionResult GetSpesificOutletType()
         {
             OutletType outletType = new OutletType();
 
@@ -275,7 +275,7 @@ namespace SFAEndpoint.Controllers
                 {
                     connection.Open();
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_TYPE_OUTLET(" + outletTypeParameter.groupCode + ")";
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_TYPE_OUTLET(0)";
 
                     using (var command = new HanaCommand(queryString, connection))
                     {

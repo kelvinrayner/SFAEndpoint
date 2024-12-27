@@ -96,7 +96,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/groupharga/header")]
         [Authorize]
-        public IActionResult GetSpesificGroupHargaHeader([FromBody] GroupHargaHeaderParameter groupHargaHeaderParameter)
+        public IActionResult GetSpesificGroupHargaHeader()
         {
             GroupHargaHeader groupHargaHeader = new GroupHargaHeader();
 
@@ -110,7 +110,7 @@ namespace SFAEndpoint.Controllers
                 {
                     connection.Open();
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_GRP_HARGA_H(" + groupHargaHeaderParameter.listNum + ")";
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_GRP_HARGA_H(0)";
 
                     using (var command = new HanaCommand(queryString, connection))
                     {

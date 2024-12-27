@@ -96,7 +96,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/productbrand/master")]
         [Authorize]
-        public IActionResult GetSpesificProductBrand([FromBody] ProductBrandParameter productBrandParameter)
+        public IActionResult GetSpesificProductBrand()
         {
             ProductBrand productBrand = new ProductBrand();
 
@@ -110,7 +110,7 @@ namespace SFAEndpoint.Controllers
                 {
                     connection.Open();
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_PRODUCT_BRAND(" + productBrandParameter.code + ")";
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_PRODUCT_BRAND(0)";
 
                     using (var command = new HanaCommand(queryString, connection))
                     {
