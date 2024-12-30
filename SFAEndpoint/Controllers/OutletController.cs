@@ -1,4 +1,5 @@
 ﻿using System.Data.Common;
+using System.Data.SqlClient;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sap.Data.Hana;
@@ -13,10 +14,12 @@ namespace SFAEndpoint.Controllers
     public class OutletController : ControllerBase
     {
         private readonly string _connectionStringHana;
+        private readonly string _connectionStringSqlServer;
 
         public OutletController(IConfiguration configuration)
         {
             _connectionStringHana = configuration.GetConnectionString("SapHanaConnection");
+            _connectionStringSqlServer = configuration.GetConnectionString("SqlServerConnection");
         }
 
         Data data = new Data();
@@ -339,8 +342,9 @@ namespace SFAEndpoint.Controllers
         public IActionResult PostOutlet([FromBody] Outlet parameter)
         {
             SBOConnection sboConnection = new SBOConnection();
-
             sboConnection.connectSBO();
+
+            var connectionSqlServer = new SqlConnection(_connectionStringSqlServer);
 
             try
             {
@@ -376,16 +380,42 @@ namespace SFAEndpoint.Controllers
                 {
                     sboConnection.oCompany.Disconnect();
 
+                    string objectLog = "OUTLET - ADD";
+                    string time = DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
+                    string status = "ERROR";
+                    string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                    connectionSqlServer.Open();
+
+                    string sqlQuery = $@"INSERT INTO SOL_DI_API_LOG (SOL_OBJECT, SOL_TIME, SOL_STATUS, SOL_ERROR_MESSAGE) VALUES ('{objectLog}', '{time}', '{status}',  '{errorMsg}')";
+                    SqlCommand cmd = new SqlCommand(sqlQuery, connectionSqlServer);
+                    cmd.ExecuteNonQuery();
+
+                    connectionSqlServer.Close();
+
                     return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                     {
                         responseCode = "500",
-                        responseMessage = "Inserted Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", ""),
+                        responseMessage = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", ""),
 
                     });
                 }
                 else
                 {
                     sboConnection.oCompany.Disconnect();
+
+                    string objectLog = "OUTLET - ADD";
+                    string time = DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
+                    string status = "SUCCESS";
+                    string errorMsg = "";
+
+                    connectionSqlServer.Open();
+
+                    string sqlQuery = $@"INSERT INTO SOL_DI_API_LOG (SOL_OBJECT, SOL_TIME, SOL_STATUS, SOL_ERROR_MESSAGE) VALUES ('{objectLog}', '{time}', '{status}',  '{errorMsg}')";
+                    SqlCommand cmd = new SqlCommand(sqlQuery, connectionSqlServer);
+                    cmd.ExecuteNonQuery();
+
+                    connectionSqlServer.Close();
 
                     return StatusCode(StatusCodes.Status200OK, new StatusResponse
                     {
@@ -421,6 +451,7 @@ namespace SFAEndpoint.Controllers
                 string code = "";
 
                 var connection = new HanaConnection(_connectionStringHana);
+                var connectionSqlServer = new SqlConnection(_connectionStringSqlServer);
 
                 using (connection)
                 {
@@ -514,6 +545,15 @@ namespace SFAEndpoint.Controllers
                     {
                         sboConnection.oCompany.Disconnect();
 
+                        sboConnection.oCompany.Disconnect();
+
+                        string objectLog = "OUTLET - UPDATE";
+                        string time = DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
+                        string status = "ERROR";
+                        string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                        connectionSqlServer.Open();
+
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
                             responseCode = "500",
@@ -524,6 +564,19 @@ namespace SFAEndpoint.Controllers
                     else
                     {
                         sboConnection.oCompany.Disconnect();
+
+                        string objectLog = "OUTLET - UPDATE";
+                        string time = DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
+                        string status = "SUCCESS";
+                        string errorMsg = "";
+
+                        connectionSqlServer.Open();
+
+                        string sqlQuery = $@"INSERT INTO SOL_DI_API_LOG (SOL_OBJECT, SOL_TIME, SOL_STATUS, SOL_ERROR_MESSAGE) VALUES ('{objectLog}', '{time}', '{status}',  '{errorMsg}')";
+                        SqlCommand cmd = new SqlCommand(sqlQuery, connectionSqlServer);
+                        cmd.ExecuteNonQuery();
+
+                        connectionSqlServer.Close();
 
                         return StatusCode(StatusCodes.Status200OK, new StatusResponse
                         {
