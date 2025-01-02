@@ -2,9 +2,9 @@
 {
     public class SalesInvoiceDetail
     {
-        public string kodeProduct { get; set; }
-        public int qtyInPcs { get; set; }
-        public double priceValue { get; set; }
-        public double discountValue { get; set;}
+        public string kodeProduk { get; set; }
+        public decimal qtyInPcs { get; set; }
+        public decimal priceValue { get; set; }
+        public decimal discountValue { get; set; }
     }
 }

@@ -7,6 +7,8 @@ using SFAEndpoint.Models;
 
 namespace SFAEndpoint.Controllers
 {
+    [Route("api/[controller]")]
+    [ApiController]
     public class UnloadingStockController : ControllerBase
     {
         private readonly string _connectionStringHana;

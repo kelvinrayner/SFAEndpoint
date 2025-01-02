@@ -6,6 +6,7 @@ using Sap.Data.Hana;
 using SFAEndpoint.Connection;
 using SFAEndpoint.Models;
 using SFAEndpoint.Models.Parameter;
+using SFAEndpoint.Services;
 
 namespace SFAEndpoint.Controllers
 {
@@ -23,6 +24,7 @@ namespace SFAEndpoint.Controllers
         }
 
         Data data = new Data();
+        InsertDILogService log = new InsertDILogService();
 
         //[HttpPost("/sapapi/sfaintegration/outlet/master/all")]
         //public IActionResult GetAllOutlet()
@@ -151,7 +153,7 @@ namespace SFAEndpoint.Controllers
                                         kodeGroupHarga = reader["kodeGroupHarga"].ToString(),
                                         defaultTypePembayaran = reader["defaultTypePembayaran"].ToString(),
                                         flagOutletRegister = reader["flagOutletRegister"].ToString(),
-                                        kodeDistributor = reader["kodeDistributor"].ToString(),
+                                        kodeDistributor = reader["kodeDistributor"].ToString()
                                     };
 
                                     listOutlet.Add(outlet);
@@ -339,15 +341,42 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/outlet/new")]
         [Authorize]
-        public IActionResult PostOutlet([FromBody] Outlet parameter)
+        public IActionResult PostOutlet([FromBody] OutletParameter parameter)
         {
+            Data data = new Data();
+            FeedbackNOO feedback = new FeedbackNOO();
+
             SBOConnection sboConnection = new SBOConnection();
             sboConnection.connectSBO();
 
-            var connectionSqlServer = new SqlConnection(_connectionStringSqlServer);
+            var connectionHana = new HanaConnection(_connectionStringHana);
 
             try
             {
+                string outletCodeSAP = "";
+
+                using (connectionHana)
+                {
+                    connectionHana.Open();
+
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_CUST_CODE_SAP('" + parameter.kodePelanggan + "')";
+
+                    using (var command = new HanaCommand(queryString, connectionHana))
+                    {
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                while (reader.Read())
+                                {
+                                    outletCodeSAP = reader["CardCode"].ToString();
+                                }
+                            }
+                        }
+                    }
+                    connectionHana.Close();
+                }
+
                 if (parameter.flagOutletRegister == "C")
                 {
                     parameter.flagOutletRegister = "Y";
@@ -381,17 +410,10 @@ namespace SFAEndpoint.Controllers
                     sboConnection.oCompany.Disconnect();
 
                     string objectLog = "OUTLET - ADD";
-                    string time = DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
                     string status = "ERROR";
                     string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                    connectionSqlServer.Open();
-
-                    string sqlQuery = $@"INSERT INTO SOL_DI_API_LOG (SOL_OBJECT, SOL_TIME, SOL_STATUS, SOL_ERROR_MESSAGE) VALUES ('{objectLog}', '{time}', '{status}',  '{errorMsg}')";
-                    SqlCommand cmd = new SqlCommand(sqlQuery, connectionSqlServer);
-                    cmd.ExecuteNonQuery();
-
-                    connectionSqlServer.Close();
+                    log.insertLog(objectLog, status, errorMsg);
 
                     return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                     {
@@ -405,24 +427,25 @@ namespace SFAEndpoint.Controllers
                     sboConnection.oCompany.Disconnect();
 
                     string objectLog = "OUTLET - ADD";
-                    string time = DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
                     string status = "SUCCESS";
                     string errorMsg = "";
 
-                    connectionSqlServer.Open();
+                    log.insertLog(objectLog, status, errorMsg);
 
-                    string sqlQuery = $@"INSERT INTO SOL_DI_API_LOG (SOL_OBJECT, SOL_TIME, SOL_STATUS, SOL_ERROR_MESSAGE) VALUES ('{objectLog}', '{time}', '{status}',  '{errorMsg}')";
-                    SqlCommand cmd = new SqlCommand(sqlQuery, connectionSqlServer);
-                    cmd.ExecuteNonQuery();
-
-                    connectionSqlServer.Close();
-
-                    return StatusCode(StatusCodes.Status200OK, new StatusResponse
+                    feedback = new FeedbackNOO
                     {
-                        responseCode = "200",
-                        responseMessage = "Outlet " + parameter.kodePelanggan + " created.",
+                        custNoSFA = parameter.kodePelanggan,
+                        date = DateTime.Now,
+                        refInterfaceId = parameter.sfaRefrenceNumber,
+                        custNoSAP = outletCodeSAP
+                    };
 
-                    });
+                    data = new Data
+                    {
+                        data = feedback
+                    };
+
+                    return Ok(data);
                 }
             }
             catch (Exception ex)
@@ -440,8 +463,11 @@ namespace SFAEndpoint.Controllers
 
         [HttpPut("/sapapi/sfaintegration/outlet/update")]
         [Authorize]
-        public IActionResult UpdateOutlet([FromBody] Outlet parameter)
+        public IActionResult UpdateOutlet([FromBody] OutletParameter parameter)
         {
+            Data data = new Data();
+            FeedbackNOO feedback = new FeedbackNOO();
+
             SBOConnection sboConnection = new SBOConnection();
 
             sboConnection.connectSBO();
@@ -449,6 +475,7 @@ namespace SFAEndpoint.Controllers
             try
             {
                 string code = "";
+                string outletCodeSAP = "";
 
                 var connection = new HanaConnection(_connectionStringHana);
                 var connectionSqlServer = new SqlConnection(_connectionStringSqlServer);
@@ -477,6 +504,22 @@ namespace SFAEndpoint.Controllers
                                 while (reader.Read())
                                 {
                                     code = reader["Code"].ToString();
+                                }
+                            }
+                        }
+                    }
+
+                    string queryStringOutletCode = "CALL SOL_SP_ADDON_SFA_INT_CUST_CODE_SAP('" + parameter.kodePelanggan + "')";
+
+                    using (var commandOutletCode = new HanaCommand(queryString, connection))
+                    {
+                        using (var readerOutletCode = commandOutletCode.ExecuteReader())
+                        {
+                            if (readerOutletCode.HasRows)
+                            {
+                                while (readerOutletCode.Read())
+                                {
+                                    outletCodeSAP = readerOutletCode["CardCode"].ToString();
                                 }
                             }
                         }
@@ -545,14 +588,11 @@ namespace SFAEndpoint.Controllers
                     {
                         sboConnection.oCompany.Disconnect();
 
-                        sboConnection.oCompany.Disconnect();
-
                         string objectLog = "OUTLET - UPDATE";
-                        string time = DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
                         string status = "ERROR";
                         string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                        connectionSqlServer.Open();
+                        log.insertLog(objectLog, status, errorMsg);
 
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
@@ -566,24 +606,25 @@ namespace SFAEndpoint.Controllers
                         sboConnection.oCompany.Disconnect();
 
                         string objectLog = "OUTLET - UPDATE";
-                        string time = DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
                         string status = "SUCCESS";
                         string errorMsg = "";
 
-                        connectionSqlServer.Open();
+                        log.insertLog(objectLog, status, errorMsg);
 
-                        string sqlQuery = $@"INSERT INTO SOL_DI_API_LOG (SOL_OBJECT, SOL_TIME, SOL_STATUS, SOL_ERROR_MESSAGE) VALUES ('{objectLog}', '{time}', '{status}',  '{errorMsg}')";
-                        SqlCommand cmd = new SqlCommand(sqlQuery, connectionSqlServer);
-                        cmd.ExecuteNonQuery();
-
-                        connectionSqlServer.Close();
-
-                        return StatusCode(StatusCodes.Status200OK, new StatusResponse
+                        feedback = new FeedbackNOO
                         {
-                            responseCode = "200",
-                            responseMessage = "Outlet " + parameter.kodePelanggan + " updated.",
+                            custNoSFA = parameter.kodePelanggan,
+                            date = DateTime.Now,
+                            refInterfaceId = parameter.sfaRefrenceNumber,
+                            custNoSAP = outletCodeSAP
+                        };
 
-                        });
+                        data = new Data
+                        {
+                            data = feedback
+                        };
+
+                        return Ok(data);
                     }
                 }
                 else

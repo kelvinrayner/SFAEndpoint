@@ -2,15 +2,15 @@
 {
     public class InvoiceTagihan
     {
-        public string kodeCustomer { get; set; } = String.Empty;
-        public string noInvoice { get; set; } = String.Empty;
-        public DateTime tanggalInvoice { get; set; } = DateTime.Now;
-        public DateTime tanggalInvoiceJatuhTempo { get; set; } = DateTime.Now;
-        public decimal nilaiInvoice { get; set; } = 0;
-        public decimal nilaiInvoiceTerbayar { get; set; } = 0;
-        public string kodeSalesman { get; set; } = String.Empty;
-        public string kodeDistributorCabang { get; set; } = String.Empty;
-        public string invoiceType { get; set; } = String.Empty;
-        public DateTime tanggalTagih { get; set; } = DateTime.Now;
+        public string kodeCustomer { get; set; }
+        public string noInvoice { get; set; }
+        public DateTime tanggalInvoice { get; set; }
+        public DateTime tanggalInvoiceJatuhTempo { get; set; }
+        public decimal nilaiInvoice { get; set; }
+        public decimal nilaiInvoiceTerbayar { get; set; }
+        public string kodeSalesman { get; set; }
+        public string kodeCabang { get; set; }
+        public string invoiceType { get; set; }
+        public string tanggalTagih { get; set; }
     }
 }
