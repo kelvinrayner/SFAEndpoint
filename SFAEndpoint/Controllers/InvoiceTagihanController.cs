@@ -55,6 +55,7 @@ namespace SFAEndpoint.Controllers
                                 {
                                     invoiceTagihan = new InvoiceTagihan
                                     {
+                                        docEntrySAP = Convert.ToInt32(reader["docEntry"]),
                                         kodeCustomer = reader["kodeCustomer"].ToString(),
                                         noInvoice = reader["noInvoice"].ToString(),
                                         tanggalInvoice = Convert.ToDateTime(reader["tanggalInvoice"]),

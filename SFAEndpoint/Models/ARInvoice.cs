@@ -2,6 +2,7 @@
 {
     public class ARInvoice
     {
+        public int docEntrySAP { get; set; }
         public string kodeSalesman { get; set; }
         public string kodeCustomer { get; set; }
         public string noInvoiceERP { get; set; }

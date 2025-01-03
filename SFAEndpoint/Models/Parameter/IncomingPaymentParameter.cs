@@ -2,6 +2,6 @@
 {
     public class IncomingPaymentParameter
     {
-        public string sfaRefrenceNum { get; set; }
+        public string sfaRefrenceNumber { get; set; }
     }
 }

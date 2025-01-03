@@ -1,6 +1,6 @@
 ﻿namespace SFAEndpoint.Models.Parameter
 {
-    public class InventoryTransferRequestParameter
+    public class GetSalesOrderParameter
     {
         public string sfaRefrenceNumber { get; set; }
     }

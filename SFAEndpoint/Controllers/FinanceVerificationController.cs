@@ -60,7 +60,7 @@ namespace SFAEndpoint.Controllers
                     oSon.SetProperty("U_SOL_ITEM_CODE", detail.itemCode);
                     oSon.SetProperty("U_SOL_ITEM_NAME", detail.itemName);
                     oSon.SetProperty("U_SOL_QUANTITY", detail.quantity);
-                    oSon.SetProperty("U_SOL_PRICE", detail.price);
+                    oSon.SetProperty("U_SOL_PRICE", Convert.ToDouble(detail.price));
                     oSon.SetProperty("U_SOL_WHS_CODE", detail.warehouseCode);
                 }
 

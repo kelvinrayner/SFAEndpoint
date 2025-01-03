@@ -2,6 +2,6 @@
 {
     public class ARInvoiceParameter
     {
-        public string sfaRefrenceNum { get; set; }
+        public string sfaRefrenceNumber { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 {
     public class InvoiceTagihan
     {
+        public int docEntrySAP { get; set; }
         public string kodeCustomer { get; set; }
         public string noInvoice { get; set; }
         public DateTime tanggalInvoice { get; set; }

@@ -17,7 +17,7 @@ namespace SFAEndpoint.Controllers
             _connectionStringHana = configuration.GetConnectionString("SapHanaConnection");
         }
 
-        [HttpPost("/sapapi/sfaintegration/inventorytransferrequest/master")]
+        [HttpPost("/sapapi/sfaintegration/inventorytransferrequest")]
         [Authorize]
         public IActionResult GetITR([FromBody] InventoryTransferRequestParameter parameter)
         {
@@ -33,7 +33,7 @@ namespace SFAEndpoint.Controllers
                 {
                     connection.Open();
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_ITR_HEADER('" + parameter.sfaRefrenceNum + "')";
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_ITR_HEADER('" + parameter.sfaRefrenceNumber + "')";
 
                     using (var command = new HanaCommand(queryString, connection))
                     {

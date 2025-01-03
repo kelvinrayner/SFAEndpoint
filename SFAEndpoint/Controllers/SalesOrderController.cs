@@ -25,6 +25,125 @@ namespace SFAEndpoint.Controllers
 
         InsertDILogService log = new InsertDILogService();
 
+        [HttpPost("/sapapi/sfaintegration/salesorder")]
+        [Authorize]
+        public IActionResult GetARInvoice([FromBody] GetSalesOrderParameter parameter)
+        {
+            Data data = new Data();
+            SalesOrder salesOrder = new SalesOrder();
+            SalesOrderDetail salesOrderDetail = new SalesOrderDetail();
+
+            var connection = new HanaConnection(_connectionStringHana);
+
+            try
+            {
+                using (connection)
+                {
+                    connection.Open();
+
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_SO_HEADER('" + parameter.sfaRefrenceNumber + "')";
+
+                    using (var command = new HanaCommand(queryString, connection))
+                    {
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (!reader.HasRows)
+                            {
+                                return StatusCode(StatusCodes.Status404NotFound, new StatusResponse
+                                {
+                                    responseCode = "404",
+                                    responseMessage = "Sales Order not found.",
+
+                                });
+                            }
+                            else
+                            {
+                                while (reader.Read())
+                                {
+                                    List<SalesOrderDetail> listSalesOrderDetail = new List<SalesOrderDetail>();
+
+                                    int docEntry;
+                                    docEntry = Convert.ToInt32(reader["docEntry"]);
+
+                                    string queryStringDetail = "CALL SOL_SP_ADDON_SFA_INT_GET_SO_DETAIL(" + docEntry + ")";
+
+                                    using (var commandDetail = new HanaCommand(queryStringDetail, connection))
+                                    {
+                                        using (var readerDetail = commandDetail.ExecuteReader())
+                                        {
+                                            if (!readerDetail.HasRows)
+                                            {
+                                                return StatusCode(StatusCodes.Status404NotFound, new StatusResponse
+                                                {
+                                                    responseCode = "404",
+                                                    responseMessage = "Sales Order Detail not found.",
+
+                                                });
+                                            }
+                                            else
+                                            {
+                                                while (readerDetail.Read())
+                                                {
+                                                    salesOrderDetail = new SalesOrderDetail
+                                                    {
+                                                        kodeProduk = readerDetail["kodeProduk"].ToString(),
+                                                        qtyInPcs = Convert.ToDouble(readerDetail["qty"]),
+                                                        priceValue = Convert.ToDouble(readerDetail["priceValue"]),
+                                                        discountValue = Convert.ToDouble(readerDetail["discountValue"])
+                                                    };
+
+                                                    listSalesOrderDetail.Add(salesOrderDetail);
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    salesOrder = new SalesOrder
+                                    {
+                                        docEntrySAP = docEntry,
+                                        kodeSalesman = reader["kodeSalesman"].ToString(),
+                                        kodeCustomer = reader["kodeCustomer"].ToString(),
+                                        noSalesOrderERP = reader["noSalesOrderERP"].ToString(),
+                                        tanggalSalesOrder = reader["tanggalSalesOrder"].ToString(),
+                                        detail = listSalesOrderDetail,
+                                        kodeCabang = reader["kodeCabang"].ToString(),
+                                        salesOrderAmount = Convert.ToDouble(reader["salesOrderAmount"]),
+                                        sfaRefrenceNumber = reader["sfaRefrenceNumber"].ToString(),
+                                    };
+                                }
+
+                                data = new Data
+                                {
+                                    data = salesOrder
+                                };
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+                return Ok(data);
+            }
+            catch (HanaException hx)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                {
+                    responseCode = "500",
+                    responseMessage = "HANA Error: " + hx.Message,
+
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                {
+                    responseCode = "500",
+                    responseMessage = ex.Message,
+
+                });
+            }
+        }
+
         [HttpPost("/sapapi/sfaintegration/salesorder/new")]
         [Authorize]
         public IActionResult PostSalesOrder([FromBody] SalesOrderParameter parameter)

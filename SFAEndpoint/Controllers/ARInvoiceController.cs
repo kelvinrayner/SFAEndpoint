@@ -33,7 +33,7 @@ namespace SFAEndpoint.Controllers
                 {
                     connection.Open();
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ARINV_HEADER('" + parameter.sfaRefrenceNum + "')";
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ARINV_HEADER('" + parameter.sfaRefrenceNumber + "')";
 
                     using (var command = new HanaCommand(queryString, connection))
                     {
@@ -93,6 +93,7 @@ namespace SFAEndpoint.Controllers
 
                                     arInvoice = new ARInvoice
                                     {
+                                        docEntrySAP = docEntry,
                                         kodeSalesman = reader["kodeSalesman"].ToString(),
                                         kodeCustomer = reader["kodeCustomer"].ToString(),
                                         noInvoiceERP = reader["noInvoiceERP"].ToString(),
