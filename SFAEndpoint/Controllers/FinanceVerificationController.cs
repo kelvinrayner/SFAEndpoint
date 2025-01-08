@@ -49,7 +49,7 @@ namespace SFAEndpoint.Controllers
                 oGeneralData.SetProperty("U_SOL_SALES_NAME", parameter.salesName);
                 oGeneralData.SetProperty("U_SOL_REF_SKA_NUM", parameter.skaRefrenceNumber);
                 //oGeneralData.SetProperty("U_SOL_DOC_TOTAL", 100000);
-                oGeneralData.SetProperty("U_SOL_REQ_DATE", parameter.requestDate);
+                oGeneralData.SetProperty("U_SOL_REQ_DATE", Convert.ToDateTime(parameter.requestDate));
                 oGeneralData.SetProperty("U_SOL_WILAYAH", parameter.wilayah);
                 oGeneralData.SetProperty("U_SOL_ACCT_TRF", parameter.accountTransfer);
                 oGeneralData.SetProperty("U_SOL_STATUS", "OPEN");
