@@ -158,6 +158,8 @@ namespace SFAEndpoint.Controllers
             string salesPerson = "";
             string customerGroup = "";
 
+            DateTime tanggal = parameter.tanggal.ToDateTime(TimeOnly.MinValue);
+
             try
             {
                 var connection = new HanaConnection(_connectionStringHana);
@@ -220,8 +222,8 @@ namespace SFAEndpoint.Controllers
                 SAPbobsCOM.Documents oSales = sboConnection.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oOrders);
 
                 oSales.CardCode = parameter.cardCode;
-                oSales.DocDate = parameter.tanggal;
-                oSales.DocDueDate = parameter.tanggal;
+                oSales.DocDate = tanggal;
+                oSales.DocDueDate = tanggal;
                 oSales.SalesPersonCode = parameter.salesCode;
                 oSales.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
                 //oSales.UserFields.Fields.Item("U_SOL_WILAYAH").Value = oRecWilayah.Fields.Item("U_SOL_WILAYAH").Value;

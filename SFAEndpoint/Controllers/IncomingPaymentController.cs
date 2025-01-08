@@ -108,6 +108,8 @@ namespace SFAEndpoint.Controllers
 
             sboConnection.connectSBO();
 
+            DateTime tanggal = parameter.tanggal.ToDateTime(TimeOnly.MinValue);
+
             try
             {
                 SAPbobsCOM.Payments oIncomingPayments;
@@ -115,13 +117,13 @@ namespace SFAEndpoint.Controllers
 
                 oIncomingPayments.DocType = SAPbobsCOM.BoRcptTypes.rCustomer;
                 oIncomingPayments.CardCode = parameter.kodePelanggan;
-                oIncomingPayments.DocDate = parameter.tanggal;
+                oIncomingPayments.DocDate = tanggal;
                 oIncomingPayments.DocCurrency = "IDR";
                 //oIncomingPayments.LocalCurrency = SAPbobsCOM.BoYesNoEnum.tYES;
                 oIncomingPayments.BankAccount = parameter.bankAccount;
                 //oIncomingPayments.BankCode = "BRI";
                 oIncomingPayments.TransferAccount = parameter.bankAccount;
-                oIncomingPayments.TransferDate = parameter.tanggal;
+                oIncomingPayments.TransferDate = tanggal;
                 oIncomingPayments.TransferSum = Convert.ToDouble(parameter.totalAmount);
                 oIncomingPayments.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
 

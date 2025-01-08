@@ -33,6 +33,8 @@ namespace SFAEndpoint.Controllers
 
             var connection = new HanaConnection(_connectionStringHana);
 
+            DateTime tanggal = parameter.tanggal.ToDateTime(TimeOnly.MinValue);
+
             try
             {
                 bool retur = false;
@@ -181,186 +183,138 @@ namespace SFAEndpoint.Controllers
                 }
                 else if (doStatus == "C" && doCanceled == "N" && arInvStatus == "O" && arInvCanceled == "N")
                 {
-                    try
+                    if (parameter.tanggalARCM.HasValue)
                     {
-                        Documents oCreditMemo = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oCreditNotes);
+                        DateTime tanggalARCM = parameter.tanggalARCM.Value.ToDateTime(TimeOnly.MinValue);
 
-                        oCreditMemo.DocDate = parameter.tanggal;
-                        oCreditMemo.CardCode = parameter.cardCode;
-                        oCreditMemo.SalesPersonCode = parameter.salesCode;
-                        oCreditMemo.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
-                        //oCreditMemo.UserFields.Fields.Item("U_SOL_DOC_DATE_SFA").Value = parameter.tanggal;
-                        //oReturn.DocumentsOwner = EmpId;
-
-                        foreach (var detail in parameter.detail)
+                        try
                         {
-                            int lineNum = 0;
-                            string whsCode = "";
+                            Documents oCreditMemo = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oCreditNotes);
 
-                            using (connection)
+                            oCreditMemo.DocDate = tanggalARCM;
+                            oCreditMemo.CardCode = parameter.cardCode;
+                            oCreditMemo.SalesPersonCode = parameter.salesCode;
+                            oCreditMemo.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
+                            //oCreditMemo.UserFields.Fields.Item("U_SOL_DOC_DATE_SFA").Value = parameter.tanggal;
+                            //oReturn.DocumentsOwner = EmpId;
+
+                            foreach (var detail in parameter.detail)
                             {
-                                connection.Open();
+                                int lineNum = 0;
+                                string whsCode = "";
 
-                                string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_INVOICE_CM_DETAIL(" + docEntryARInv + ", '" + detail.itemCode + "')";
-
-                                using (var command = new HanaCommand(queryString, connection))
+                                using (connection)
                                 {
-                                    using (var reader = command.ExecuteReader())
+                                    connection.Open();
+
+                                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_INVOICE_CM_DETAIL(" + docEntryARInv + ", '" + detail.itemCode + "')";
+
+                                    using (var command = new HanaCommand(queryString, connection))
                                     {
-                                        if (reader.HasRows)
+                                        using (var reader = command.ExecuteReader())
                                         {
-                                            while (reader.Read())
+                                            if (reader.HasRows)
                                             {
-                                                lineNum = Convert.ToInt32(reader["lineNumSAP"]);
-                                                whsCode = reader["whsCode"].ToString();
+                                                while (reader.Read())
+                                                {
+                                                    lineNum = Convert.ToInt32(reader["lineNumSAP"]);
+                                                    whsCode = reader["whsCode"].ToString();
+                                                }
                                             }
                                         }
                                     }
+                                    connection.Close();
                                 }
-                                connection.Close();
+
+                                oCreditMemo.Lines.BaseEntry = docEntryARInv;
+                                oCreditMemo.Lines.BaseType = 13;
+                                oCreditMemo.Lines.BaseLine = lineNum;
+                                oCreditMemo.Lines.ItemCode = detail.itemCode;
+                                oCreditMemo.Lines.Quantity = detail.quantity;
+                                oCreditMemo.Lines.WarehouseCode = whsCode;
+
+                                oCreditMemo.Lines.Add();
                             }
 
-                            oCreditMemo.Lines.BaseEntry = docEntryARInv;
-                            oCreditMemo.Lines.BaseType = 13;
-                            oCreditMemo.Lines.BaseLine = lineNum;
-                            oCreditMemo.Lines.ItemCode = detail.itemCode;
-                            oCreditMemo.Lines.Quantity = detail.quantity;
-                            oCreditMemo.Lines.WarehouseCode = whsCode;
+                            int retval = 0;
 
-                            oCreditMemo.Lines.Add();
+                            retval = oCreditMemo.Add();
+
+                            if (retval != 0)
+                            {
+                                sboConnection.oCompany.Disconnect();
+
+                                string objectLog = "AR CREDIT MEMO BASED AR INV - ADD";
+                                string status = "ERROR";
+                                string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                                log.insertLog(objectLog, status, errorMsg);
+
+                                return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                                {
+                                    responseCode = "500",
+                                    responseMessage = errorMsg
+                                });
+                            }
+                            else
+                            {
+                                sboConnection.oCompany.Disconnect();
+
+                                string objectLog = "AR CREDIT MEMO BASED AR INV - ADD";
+                                string status = "SUCCESS";
+                                string errorMsg = "";
+
+                                log.insertLog(objectLog, status, errorMsg);
+
+                                return StatusCode(StatusCodes.Status200OK, new StatusResponse
+                                {
+                                    responseCode = "200",
+                                    responseMessage = "AR Credit Memo added to SAP."
+                                });
+                            }
                         }
-
-                        int retval = 0;
-
-                        retval = oCreditMemo.Add();
-
-                        if (retval != 0)
+                        catch (Exception ex)
                         {
-                            sboConnection.oCompany.Disconnect();
-
-                            string objectLog = "AR CREDIT MEMO BASED AR INV - ADD";
-                            string status = "ERROR";
-                            string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
-
-                            log.insertLog(objectLog, status, errorMsg);
+                            sboConnection.connectSBO();
 
                             return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                             {
                                 responseCode = "500",
-                                responseMessage = errorMsg
-                            });
-                        }
-                        else
-                        {
-                            sboConnection.oCompany.Disconnect();
+                                responseMessage = ex.Message,
 
-                            string objectLog = "AR CREDIT MEMO BASED AR INV - ADD";
-                            string status = "SUCCESS";
-                            string errorMsg = "";
-
-                            log.insertLog(objectLog, status, errorMsg);
-
-                            return StatusCode(StatusCodes.Status200OK, new StatusResponse
-                            {
-                                responseCode = "200",
-                                responseMessage = "AR Credit Memo added to SAP."
                             });
                         }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        sboConnection.connectSBO();
-
-                        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                        return StatusCode(StatusCodes.Status400BadRequest, new StatusResponse
                         {
-                            responseCode = "500",
-                            responseMessage = ex.Message,
+                            responseCode = "400",
+                            responseMessage = "Key tanggalARCM is required.",
 
                         });
                     }
+                    
                 }
                 else if (arInvStatus == "C" && arInvCanceled == "N" && docNumIncoming != 0)
                 {
-                    try
+                    if (parameter.tanggalARCM.HasValue)
                     {
-                        string branch = "";
-                        string productGroup = "";
-                        string brand = "";
-                        string salesPerson = "";
-                        string customerGroup = "";
-
-                        using (connection)
+                        try
                         {
-                            connection.Open();
+                            string branch = "";
+                            string productGroup = "";
+                            string brand = "";
+                            string salesPerson = "";
+                            string customerGroup = "";
 
-                            string queryString = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRANCH_SO(" + parameter.salesCode + ")";
+                            DateTime tanggalARCM = parameter.tanggalARCM.Value.ToDateTime(TimeOnly.MinValue);
 
-                            using (var command = new HanaCommand(queryString, connection))
-                            {
-                                using (var reader = command.ExecuteReader())
-                                {
-                                    if (reader.HasRows)
-                                    {
-                                        while (reader.Read())
-                                        {
-                                            branch = reader["U_SOL_BRANCH"].ToString();
-                                        }
-                                    }
-                                }
-                            }
-
-                            string queryStringSalesPerson = "CALL SOL_SP_ADDON_SFA_INT_FMS_SALES_PERSON_SO('" + parameter.salesCode + "')";
-
-                            using (var commandSalesPerson = new HanaCommand(queryStringSalesPerson, connection))
-                            {
-                                using (var readerSalesPerson = commandSalesPerson.ExecuteReader())
-                                {
-                                    if (readerSalesPerson.HasRows)
-                                    {
-                                        while (readerSalesPerson.Read())
-                                        {
-                                            salesPerson = readerSalesPerson["PrcCode"].ToString();
-                                        }
-                                    }
-                                }
-                            }
-
-                            string queryStringCustomerGroup = "CALL SOL_SP_ADDON_SFA_INT_FMS_CUST_GROUP_SO('" + parameter.cardCode + "')";
-
-                            using (var commandCustomerGroup = new HanaCommand(queryStringCustomerGroup, connection))
-                            {
-                                using (var readerCustomerGroup = commandCustomerGroup.ExecuteReader())
-                                {
-                                    if (readerCustomerGroup.HasRows)
-                                    {
-                                        while (readerCustomerGroup.Read())
-                                        {
-                                            customerGroup = readerCustomerGroup["PrcCode"].ToString();
-                                        }
-                                    }
-                                }
-                            }
-
-                            connection.Close();
-                        }
-
-
-                        Documents oCreditMemo = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oCreditNotes);
-
-                        oCreditMemo.DocDate = parameter.tanggal;
-                        oCreditMemo.CardCode = parameter.cardCode;
-                        oCreditMemo.SalesPersonCode = parameter.salesCode;
-                        oCreditMemo.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
-                        //oCreditMemo.UserFields.Fields.Item("U_SOL_DOC_DATE_SFA").Value = parameter.tanggal;
-                        //oReturn.DocumentsOwner = EmpId;
-
-                        foreach (var detail in parameter.detail)
-                        {
                             using (connection)
                             {
                                 connection.Open();
 
-                                string queryString = "CALL SOL_SP_ADDON_SFA_INT_FMS_PRODUCT_GROUP_SO('" + detail.itemCode + "')";
+                                string queryString = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRANCH_SO(" + parameter.salesCode + ")";
 
                                 using (var command = new HanaCommand(queryString, connection))
                                 {
@@ -370,87 +324,164 @@ namespace SFAEndpoint.Controllers
                                         {
                                             while (reader.Read())
                                             {
-                                                productGroup = reader["PrcCode"].ToString();
+                                                branch = reader["U_SOL_BRANCH"].ToString();
                                             }
                                         }
                                     }
                                 }
 
-                                string queryStringBrand = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRAND_SO('" + detail.itemCode + "')";
+                                string queryStringSalesPerson = "CALL SOL_SP_ADDON_SFA_INT_FMS_SALES_PERSON_SO('" + parameter.salesCode + "')";
 
-                                using (var commandBrand = new HanaCommand(queryStringBrand, connection))
+                                using (var commandSalesPerson = new HanaCommand(queryStringSalesPerson, connection))
                                 {
-                                    using (var readerBrand = commandBrand.ExecuteReader())
+                                    using (var readerSalesPerson = commandSalesPerson.ExecuteReader())
                                     {
-                                        if (readerBrand.HasRows)
+                                        if (readerSalesPerson.HasRows)
                                         {
-                                            while (readerBrand.Read())
+                                            while (readerSalesPerson.Read())
                                             {
-                                                brand = readerBrand["PrcCode"].ToString();
+                                                salesPerson = readerSalesPerson["PrcCode"].ToString();
                                             }
                                         }
                                     }
                                 }
+
+                                string queryStringCustomerGroup = "CALL SOL_SP_ADDON_SFA_INT_FMS_CUST_GROUP_SO('" + parameter.cardCode + "')";
+
+                                using (var commandCustomerGroup = new HanaCommand(queryStringCustomerGroup, connection))
+                                {
+                                    using (var readerCustomerGroup = commandCustomerGroup.ExecuteReader())
+                                    {
+                                        if (readerCustomerGroup.HasRows)
+                                        {
+                                            while (readerCustomerGroup.Read())
+                                            {
+                                                customerGroup = readerCustomerGroup["PrcCode"].ToString();
+                                            }
+                                        }
+                                    }
+                                }
+
                                 connection.Close();
                             }
 
-                            oCreditMemo.Lines.ItemCode = detail.itemCode;
-                            oCreditMemo.Lines.Quantity = detail.quantity;
-                            oCreditMemo.Lines.WarehouseCode = detail.warehouseCode;
-                            oCreditMemo.Lines.CostingCode = branch;
-                            oCreditMemo.Lines.CostingCode2 = productGroup;
-                            oCreditMemo.Lines.CostingCode3 = brand;
-                            oCreditMemo.Lines.CostingCode4 = salesPerson;
-                            oCreditMemo.Lines.CostingCode5 = customerGroup;
 
-                            oCreditMemo.Lines.Add();
+                            Documents oCreditMemo = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oCreditNotes);
+
+                            oCreditMemo.DocDate = tanggalARCM;
+                            oCreditMemo.CardCode = parameter.cardCode;
+                            oCreditMemo.SalesPersonCode = parameter.salesCode;
+                            oCreditMemo.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
+                            //oCreditMemo.UserFields.Fields.Item("U_SOL_DOC_DATE_SFA").Value = parameter.tanggal;
+                            //oReturn.DocumentsOwner = EmpId;
+
+                            foreach (var detail in parameter.detail)
+                            {
+                                using (connection)
+                                {
+                                    connection.Open();
+
+                                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_FMS_PRODUCT_GROUP_SO('" + detail.itemCode + "')";
+
+                                    using (var command = new HanaCommand(queryString, connection))
+                                    {
+                                        using (var reader = command.ExecuteReader())
+                                        {
+                                            if (reader.HasRows)
+                                            {
+                                                while (reader.Read())
+                                                {
+                                                    productGroup = reader["PrcCode"].ToString();
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    string queryStringBrand = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRAND_SO('" + detail.itemCode + "')";
+
+                                    using (var commandBrand = new HanaCommand(queryStringBrand, connection))
+                                    {
+                                        using (var readerBrand = commandBrand.ExecuteReader())
+                                        {
+                                            if (readerBrand.HasRows)
+                                            {
+                                                while (readerBrand.Read())
+                                                {
+                                                    brand = readerBrand["PrcCode"].ToString();
+                                                }
+                                            }
+                                        }
+                                    }
+                                    connection.Close();
+                                }
+
+                                oCreditMemo.Lines.ItemCode = detail.itemCode;
+                                oCreditMemo.Lines.Quantity = detail.quantity;
+                                oCreditMemo.Lines.WarehouseCode = detail.warehouseCode;
+                                oCreditMemo.Lines.CostingCode = branch;
+                                oCreditMemo.Lines.CostingCode2 = productGroup;
+                                oCreditMemo.Lines.CostingCode3 = brand;
+                                oCreditMemo.Lines.CostingCode4 = salesPerson;
+                                oCreditMemo.Lines.CostingCode5 = customerGroup;
+
+                                oCreditMemo.Lines.Add();
+                            }
+
+                            int retval = 0;
+
+                            retval = oCreditMemo.Add();
+
+                            if (retval != 0)
+                            {
+                                sboConnection.oCompany.Disconnect();
+
+                                string objectLog = "AR CREDIT MEMO - ADD";
+                                string status = "ERROR";
+                                string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                                log.insertLog(objectLog, status, errorMsg);
+
+                                return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                                {
+                                    responseCode = "500",
+                                    responseMessage = errorMsg
+                                });
+                            }
+                            else
+                            {
+                                sboConnection.oCompany.Disconnect();
+
+                                string objectLog = "AR CREDIT MEMO - ADD";
+                                string status = "SUCCESS";
+                                string errorMsg = "";
+
+                                log.insertLog(objectLog, status, errorMsg);
+
+                                return StatusCode(StatusCodes.Status200OK, new StatusResponse
+                                {
+                                    responseCode = "200",
+                                    responseMessage = "AR Credit Memo added to SAP."
+                                });
+                            }
                         }
-
-                        int retval = 0;
-
-                        retval = oCreditMemo.Add();
-
-                        if (retval != 0)
+                        catch (Exception ex)
                         {
-                            sboConnection.oCompany.Disconnect();
-
-                            string objectLog = "AR CREDIT MEMO - ADD";
-                            string status = "ERROR";
-                            string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
-
-                            log.insertLog(objectLog, status, errorMsg);
+                            sboConnection.connectSBO();
 
                             return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                             {
                                 responseCode = "500",
-                                responseMessage = errorMsg
-                            });
-                        }
-                        else
-                        {
-                            sboConnection.oCompany.Disconnect();
+                                responseMessage = ex.Message,
 
-                            string objectLog = "AR CREDIT MEMO - ADD";
-                            string status = "SUCCESS";
-                            string errorMsg = "";
-
-                            log.insertLog(objectLog, status, errorMsg);
-
-                            return StatusCode(StatusCodes.Status200OK, new StatusResponse
-                            {
-                                responseCode = "200",
-                                responseMessage = "AR Credit Memo added to SAP."
                             });
                         }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        sboConnection.connectSBO();
-
-                        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                        return StatusCode(StatusCodes.Status400BadRequest, new StatusResponse
                         {
-                            responseCode = "500",
-                            responseMessage = ex.Message,
+                            responseCode = "400",
+                            responseMessage = "Key tanggalARCM is required.",
 
                         });
                     }
