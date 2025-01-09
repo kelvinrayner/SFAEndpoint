@@ -2,7 +2,7 @@
 {
     public class UnloadingStockDetailParameter
     {
-        public string itemCode { get; set; }
+        public string kodeProdukPrincipal { get; set; }
         public double quantity { get; set; }
     }
 }

@@ -112,6 +112,31 @@ namespace SFAEndpoint.Controllers
 
             try
             {
+                double docTotalAR = 0;
+
+                using (connection)
+                {
+                    connection.Open();
+
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_DOCTOTAL_ARINV(" + parameter.docEntryARInvSAP + ")";
+
+                    using (var command = new HanaCommand(queryString, connection))
+                    {
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                while (reader.Read())
+                                {
+                                    docTotalAR = Convert.ToDouble(reader["DocTotal"]);
+                                }
+                            }
+                        }
+                    }
+
+                    connection.Close();
+                }
+
                 SAPbobsCOM.Payments oIncomingPayments;
                 oIncomingPayments = sboConnection.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oIncomingPayments);
 
@@ -124,7 +149,7 @@ namespace SFAEndpoint.Controllers
                 //oIncomingPayments.BankCode = "BRI";
                 oIncomingPayments.TransferAccount = parameter.bankAccount;
                 oIncomingPayments.TransferDate = tanggal;
-                oIncomingPayments.TransferSum = Convert.ToDouble(parameter.totalAmount);
+                oIncomingPayments.TransferSum = docTotalAR;
                 oIncomingPayments.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
 
                 // Add the AR Invoice

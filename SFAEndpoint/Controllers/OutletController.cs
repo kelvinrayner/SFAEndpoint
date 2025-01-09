@@ -391,10 +391,16 @@ namespace SFAEndpoint.Controllers
                     parameter.defaultTypePembayaran = "Tunai";
                 }
 
+                if (string.IsNullOrEmpty(parameter.kodePelangganSAP))
+                {
+                    parameter.kodePelanggan = "";
+                }
+
                 SAPbobsCOM.Company oCompany = sboConnection.oCompany;
                 SAPbobsCOM.UserTable table = table = oCompany.UserTables.Item("SOL_MASTER_OUTLET");
 
                 table.UserFields.Fields.Item("U_SOL_CARD_CODE").Value = parameter.kodePelanggan;
+                table.UserFields.Fields.Item("U_SOL_CARD_CODE_SAP").Value = parameter.kodePelangganSAP;
                 table.UserFields.Fields.Item("U_SOL_CARD_NAME").Value = parameter.namaPelanggan;
                 table.UserFields.Fields.Item("U_SOL_STREET").Value = parameter.alamatPelanggan;
                 table.UserFields.Fields.Item("U_SOL_PAY_TERMS").Value = parameter.kodeTermOfPayment;

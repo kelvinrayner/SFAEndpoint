@@ -79,6 +79,7 @@ namespace SFAEndpoint.Controllers
                                                 {
                                                     arInvoiceDetail = new ARInvoiceDetail
                                                     {
+                                                        lineNumSAP = Convert.ToInt32(readerDetail["lineNumSAP"]),
                                                         kodeProduk = readerDetail["kodeProduk"].ToString(),
                                                         qtyInPcs = Convert.ToDecimal(readerDetail["qty"]),
                                                         priceValue = Convert.ToDecimal(readerDetail["priceValue"]),

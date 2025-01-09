@@ -34,6 +34,8 @@ namespace SFAEndpoint.Controllers
             var connection = new HanaConnection(_connectionStringHana);
 
             DateTime tanggal = parameter.tanggal.ToDateTime(TimeOnly.MinValue);
+            string itemCode = "";
+            string itemName = "";
 
             try
             {
@@ -76,6 +78,15 @@ namespace SFAEndpoint.Controllers
                                     docNumIncoming = Convert.ToInt32(reader["DocNumIncoming"]);
                                 }
                             }
+                            else
+                            {
+                                return StatusCode(StatusCodes.Status400BadRequest, new StatusResponse
+                                {
+                                    responseCode = "400",
+                                    responseMessage = "SFA Refrence Number: " + parameter.sfaRefrenceNumber + " not found."
+
+                                });
+                            }
                         }
                     }
                     connection.Close();
@@ -103,7 +114,7 @@ namespace SFAEndpoint.Controllers
                             {
                                 connection.Open();
 
-                                string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_DELIVERY_DETAIL(" + docEntryDO + ", '" + detail.itemCode + "')";
+                                string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
 
                                 using (var command = new HanaCommand(queryString, connection))
                                 {
@@ -113,8 +124,25 @@ namespace SFAEndpoint.Controllers
                                         {
                                             while (reader.Read())
                                             {
-                                                lineNum = Convert.ToInt32(reader["lineNumSAP"]);
-                                                whsCode = reader["whsCode"].ToString();
+                                                itemCode = reader["ItemCode"].ToString();
+                                                itemName = reader["ItemName"].ToString();
+                                            }
+                                        }
+                                    }
+                                }
+
+                                string queryStringDelivery = "CALL SOL_SP_ADDON_SFA_INT_GET_DELIVERY_DETAIL(" + docEntryDO + ", '" + itemCode + "')";
+
+                                using (var commandDelivery = new HanaCommand(queryStringDelivery, connection))
+                                {
+                                    using (var readerDelivery = commandDelivery.ExecuteReader())
+                                    {
+                                        if (readerDelivery.HasRows)
+                                        {
+                                            while (readerDelivery.Read())
+                                            {
+                                                lineNum = Convert.ToInt32(readerDelivery["lineNumSAP"]);
+                                                whsCode = readerDelivery["whsCode"].ToString();
                                             }
                                         }
                                     }
@@ -125,7 +153,7 @@ namespace SFAEndpoint.Controllers
                             oReturn.Lines.BaseEntry = docEntryDO;
                             oReturn.Lines.BaseType = 15;
                             oReturn.Lines.BaseLine = lineNum;
-                            oReturn.Lines.ItemCode = detail.itemCode;
+                            oReturn.Lines.ItemCode = itemCode;
                             oReturn.Lines.Quantity = detail.quantity;
                             oReturn.Lines.WarehouseCode = whsCode;
 
@@ -207,7 +235,7 @@ namespace SFAEndpoint.Controllers
                                 {
                                     connection.Open();
 
-                                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_INVOICE_CM_DETAIL(" + docEntryARInv + ", '" + detail.itemCode + "')";
+                                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
 
                                     using (var command = new HanaCommand(queryString, connection))
                                     {
@@ -217,8 +245,25 @@ namespace SFAEndpoint.Controllers
                                             {
                                                 while (reader.Read())
                                                 {
-                                                    lineNum = Convert.ToInt32(reader["lineNumSAP"]);
-                                                    whsCode = reader["whsCode"].ToString();
+                                                    itemCode = reader["ItemCode"].ToString();
+                                                    itemName = reader["ItemName"].ToString();
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    string queryStringReturn = "CALL SOL_SP_ADDON_SFA_INT_GET_INVOICE_CM_DETAIL(" + docEntryARInv + ", '" + itemCode + "')";
+
+                                    using (var commandReturn = new HanaCommand(queryStringReturn, connection))
+                                    {
+                                        using (var readerReturn = commandReturn.ExecuteReader())
+                                        {
+                                            if (readerReturn.HasRows)
+                                            {
+                                                while (readerReturn.Read())
+                                                {
+                                                    lineNum = Convert.ToInt32(readerReturn["lineNumSAP"]);
+                                                    whsCode = readerReturn["whsCode"].ToString();
                                                 }
                                             }
                                         }
@@ -229,7 +274,7 @@ namespace SFAEndpoint.Controllers
                                 oCreditMemo.Lines.BaseEntry = docEntryARInv;
                                 oCreditMemo.Lines.BaseType = 13;
                                 oCreditMemo.Lines.BaseLine = lineNum;
-                                oCreditMemo.Lines.ItemCode = detail.itemCode;
+                                oCreditMemo.Lines.ItemCode = itemCode;
                                 oCreditMemo.Lines.Quantity = detail.quantity;
                                 oCreditMemo.Lines.WarehouseCode = whsCode;
 
@@ -307,6 +352,7 @@ namespace SFAEndpoint.Controllers
                             string brand = "";
                             string salesPerson = "";
                             string customerGroup = "";
+                            double lineTotal = 0;
 
                             DateTime tanggalARCM = parameter.tanggalARCM.Value.ToDateTime(TimeOnly.MinValue);
 
@@ -381,7 +427,7 @@ namespace SFAEndpoint.Controllers
                                 {
                                     connection.Open();
 
-                                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_FMS_PRODUCT_GROUP_SO('" + detail.itemCode + "')";
+                                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
 
                                     using (var command = new HanaCommand(queryString, connection))
                                     {
@@ -391,13 +437,30 @@ namespace SFAEndpoint.Controllers
                                             {
                                                 while (reader.Read())
                                                 {
-                                                    productGroup = reader["PrcCode"].ToString();
+                                                    itemCode = reader["ItemCode"].ToString();
+                                                    itemName = reader["ItemName"].ToString();
                                                 }
                                             }
                                         }
                                     }
 
-                                    string queryStringBrand = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRAND_SO('" + detail.itemCode + "')";
+                                    string queryStringGroupSO = "CALL SOL_SP_ADDON_SFA_INT_FMS_PRODUCT_GROUP_SO('" + itemCode + "')";
+
+                                    using (var commandGroupSO = new HanaCommand(queryStringGroupSO, connection))
+                                    {
+                                        using (var readerGroupSO = commandGroupSO.ExecuteReader())
+                                        {
+                                            if (readerGroupSO.HasRows)
+                                            {
+                                                while (readerGroupSO.Read())
+                                                {
+                                                    productGroup = readerGroupSO["PrcCode"].ToString();
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    string queryStringBrand = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRAND_SO('" + itemCode + "')";
 
                                     using (var commandBrand = new HanaCommand(queryStringBrand, connection))
                                     {
@@ -412,12 +475,29 @@ namespace SFAEndpoint.Controllers
                                             }
                                         }
                                     }
+
+                                    string queryStringLineTotal = "CALL SOL_SP_ADDON_SFA_INT_GET_LINE_TOTAL_ARINV(" + docEntryARInv + ", '" + itemCode + "')";
+
+                                    using (var commandLineTotal = new HanaCommand(queryStringLineTotal, connection))
+                                    {
+                                        using (var readerLineTotal = commandLineTotal.ExecuteReader())
+                                        {
+                                            if (readerLineTotal.HasRows)
+                                            {
+                                                while (readerLineTotal.Read())
+                                                {
+                                                    lineTotal = Convert.ToDouble(readerLineTotal["LineTotal"]);
+                                                }
+                                            }
+                                        }
+                                    }
                                     connection.Close();
                                 }
 
-                                oCreditMemo.Lines.ItemCode = detail.itemCode;
+                                oCreditMemo.Lines.ItemCode = itemCode;
                                 oCreditMemo.Lines.Quantity = detail.quantity;
                                 oCreditMemo.Lines.WarehouseCode = detail.warehouseCode;
+                                oCreditMemo.Lines.LineTotal = lineTotal;
                                 oCreditMemo.Lines.CostingCode = branch;
                                 oCreditMemo.Lines.CostingCode2 = productGroup;
                                 oCreditMemo.Lines.CostingCode3 = brand;

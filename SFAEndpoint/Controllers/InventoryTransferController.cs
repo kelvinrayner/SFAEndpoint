@@ -87,10 +87,37 @@ namespace SFAEndpoint.Controllers
 
                 foreach (var detail in inventoryTransfer.detail)
                 {
+                    string itemCode = "";
+                    string itemName = "";
+
+                    using (connection)
+                    {
+                        connection.Open();
+
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
+
+                        using (var command = new HanaCommand(queryString, connection))
+                        {
+                            using (var reader = command.ExecuteReader())
+                            {
+                                if (reader.HasRows)
+                                {
+                                    while (reader.Read())
+                                    {
+                                        itemCode = reader["ItemCode"].ToString();
+                                        itemName = reader["ItemName"].ToString();
+                                    }
+                                }
+                            }
+                        }
+
+                        connection.Close();
+                    }
+
                     oIT.Lines.BaseEntry = inventoryTransfer.docEntrySAP;
                     oIT.Lines.BaseType = SAPbobsCOM.InvBaseDocTypeEnum.InventoryTransferRequest;
                     oIT.Lines.BaseLine = detail.lineNumSAP;
-                    oIT.Lines.ItemCode = detail.itemCode;
+                    oIT.Lines.ItemCode = itemCode;
                     oIT.Lines.Quantity = detail.quantity;
                     oIT.Lines.FromWarehouseCode = inventoryTransfer.fromWarehouse;
                     oIT.Lines.WarehouseCode = inventoryTransfer.toWarehouse;

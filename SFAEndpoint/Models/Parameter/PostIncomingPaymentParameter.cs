@@ -5,7 +5,7 @@
         public string kodePelanggan { get; set; }
         public DateOnly tanggal { get; set; }
         public string bankAccount { get; set; }
-        public string totalAmount { get; set; }
+        public string? totalAmount { get; set; }
         public int docEntryARInvSAP { get; set; }
         public string sfaRefrenceNumber { get; set; }
     }

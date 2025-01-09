@@ -76,7 +76,9 @@ namespace SFAEndpoint.Controllers
                                                     {
                                                         salesInvoiceDetail = new SalesInvoiceDetail
                                                         {
+                                                            lineNumSAP = Convert.ToInt32(readerDetail["lineNumSAP"]),
                                                             kodeProduk = readerDetail["kodeProduk"].ToString(),
+                                                            kodeProdukPrincipal = readerDetail["kodeProdukPrincipal"].ToString(),
                                                             qtyInPcs = Convert.ToDecimal(readerDetail["qty"]),
                                                             priceValue = Convert.ToDecimal(readerDetail["priceValue"]),
                                                             discountValue = Convert.ToDecimal(readerDetail["discountValue"])
@@ -102,7 +104,9 @@ namespace SFAEndpoint.Controllers
                                                     {
                                                         salesInvoiceDetail = new SalesInvoiceDetail
                                                         {
+                                                            lineNumSAP = Convert.ToInt32(readerDetail["lineNumSAP"]),
                                                             kodeProduk = readerDetail["kodeProduk"].ToString(),
+                                                            kodeProdukPrincipal = readerDetail["kodeProdukPrincipal"].ToString(),
                                                             qtyInPcs = Convert.ToDecimal(readerDetail["qty"]),
                                                             priceValue = Convert.ToDecimal(readerDetail["priceValue"]),
                                                             discountValue = Convert.ToDecimal(readerDetail["discountValue"])

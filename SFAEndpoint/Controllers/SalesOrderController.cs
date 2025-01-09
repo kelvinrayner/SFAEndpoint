@@ -152,6 +152,8 @@ namespace SFAEndpoint.Controllers
 
             sboConnection.connectSBO();
 
+            string itemCode = "";
+            string itemName = "";
             string wilayah = "";
             string productGroup = "";
             string brand = "";
@@ -235,7 +237,7 @@ namespace SFAEndpoint.Controllers
                     {
                         connection.Open();
 
-                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_FMS_PRODUCT_GROUP_SO('" + detail.itemCode + "')";
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
 
                         using (var command = new HanaCommand(queryString, connection))
                         {
@@ -245,13 +247,30 @@ namespace SFAEndpoint.Controllers
                                 {
                                     while (reader.Read())
                                     {
-                                        productGroup = reader["PrcCode"].ToString();
+                                        itemCode = reader["ItemCode"].ToString();
+                                        itemName = reader["ItemName"].ToString();
                                     }
                                 }
                             }
                         }
 
-                        string queryStringBrand = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRAND_SO('" + detail.itemCode + "')";
+                        string queryStringGroupSO = "CALL SOL_SP_ADDON_SFA_INT_FMS_PRODUCT_GROUP_SO('" + itemCode + "')";
+
+                        using (var commandGroupSO = new HanaCommand(queryStringGroupSO, connection))
+                        {
+                            using (var readerGroupSO = commandGroupSO.ExecuteReader())
+                            {
+                                if (readerGroupSO.HasRows)
+                                {
+                                    while (readerGroupSO.Read())
+                                    {
+                                        productGroup = readerGroupSO["PrcCode"].ToString();
+                                    }
+                                }
+                            }
+                        }
+
+                        string queryStringBrand = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRAND_SO('" + itemCode + "')";
 
                         using (var commandBrand = new HanaCommand(queryStringBrand, connection))
                         {
@@ -269,7 +288,7 @@ namespace SFAEndpoint.Controllers
                         connection.Close();
                     }
 
-                    oSales.Lines.ItemCode = detail.itemCode;
+                    oSales.Lines.ItemCode = itemCode;
                     oSales.Lines.Quantity = detail.quantity;
                     oSales.Lines.UnitPrice = detail.unitPrice;
                     oSales.Lines.WarehouseCode = detail.warehouseCode;

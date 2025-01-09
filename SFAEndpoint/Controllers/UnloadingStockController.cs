@@ -70,12 +70,39 @@ namespace SFAEndpoint.Controllers
 
                 foreach (var detail in parameter.detail)
                 {
+                    string itemCode = "";
+                    string itemName = "";
+
+                    using (connection)
+                    {
+                        connection.Open();
+
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
+
+                        using (var command = new HanaCommand(queryString, connection))
+                        {
+                            using (var reader = command.ExecuteReader())
+                            {
+                                if (reader.HasRows)
+                                {
+                                    while (reader.Read())
+                                    {
+                                        itemCode = reader["ItemCode"].ToString();
+                                        itemName = reader["ItemName"].ToString();
+                                    }
+                                }
+                            }
+                        }
+
+                        connection.Close();
+                    }
+
                     //oIT.Lines.BaseEntry = -1;
                     oIT.Lines.BaseType = SAPbobsCOM.InvBaseDocTypeEnum.Empty;
                     //oIT.Lines.BaseLine = detail.lineNumSAP;
                     oIT.Lines.FromWarehouseCode = parameter.fromWarehouse;
                     oIT.Lines.WarehouseCode = parameter.toWarehouse;
-                    oIT.Lines.ItemCode = detail.itemCode;
+                    oIT.Lines.ItemCode = itemCode;
                     oIT.Lines.Quantity = detail.quantity;
                     oIT.Lines.Quantity = detail.quantity;
                     oIT.Lines.FromWarehouseCode = parameter.fromWarehouse;

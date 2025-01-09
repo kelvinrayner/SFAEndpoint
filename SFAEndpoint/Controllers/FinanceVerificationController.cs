@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sap.Data.Hana;
 using SFAEndpoint.Connection;
 using SFAEndpoint.Models;
 using SFAEndpoint.Models.Parameter;
@@ -24,6 +25,8 @@ namespace SFAEndpoint.Controllers
             SBOConnection sboConnection = new SBOConnection();
 
             sboConnection.connectSBO();
+
+            var connection = new HanaConnection(_connectionStringHana);
 
             DateTime requestDate = parameter.requestDate.ToDateTime(TimeOnly.MinValue);
 
@@ -56,11 +59,38 @@ namespace SFAEndpoint.Controllers
 
                 foreach (var detail in parameter.detail)
                 {
+                    string itemCode = "";
+                    string itemName = "";
+
+                    using (connection)
+                    {
+                        connection.Open();
+
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
+
+                        using (var command = new HanaCommand(queryString, connection))
+                        {
+                            using (var reader = command.ExecuteReader())
+                            {
+                                if (reader.HasRows)
+                                {
+                                    while (reader.Read())
+                                    {
+                                        itemCode = reader["ItemCode"].ToString();
+                                        itemName = reader["ItemName"].ToString();
+                                    }
+                                }
+                            }
+                        }
+
+                        connection.Close();
+                    }
+
                     //Specify data for child UDO
                     oSons = oGeneralData.Child("SOL_D_FIN_VERIF");
                     oSon = oSons.Add();
-                    oSon.SetProperty("U_SOL_ITEM_CODE", detail.itemCode);
-                    oSon.SetProperty("U_SOL_ITEM_NAME", detail.itemName);
+                    oSon.SetProperty("U_SOL_ITEM_CODE", itemCode);
+                    oSon.SetProperty("U_SOL_ITEM_NAME", itemName);
                     oSon.SetProperty("U_SOL_QUANTITY", detail.quantity);
                     oSon.SetProperty("U_SOL_PRICE", Convert.ToDouble(detail.price));
                     oSon.SetProperty("U_SOL_WHS_CODE", detail.warehouseCode);

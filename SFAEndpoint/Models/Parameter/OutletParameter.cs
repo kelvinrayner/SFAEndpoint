@@ -3,6 +3,7 @@
     public class OutletParameter
     {
         public string kodePelanggan { get; set; }
+        public string? kodePelangganSAP { get; set; }
         public string namaPelanggan { get; set; }
         public string alamatPelanggan { get; set; }
         public string kodeTermOfPayment { get; set; }
