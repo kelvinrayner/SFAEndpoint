@@ -117,6 +117,7 @@ namespace SFAEndpoint.Controllers
                     oIT.Lines.BaseEntry = inventoryTransfer.docEntrySAP;
                     oIT.Lines.BaseType = SAPbobsCOM.InvBaseDocTypeEnum.InventoryTransferRequest;
                     oIT.Lines.BaseLine = detail.lineNumSAP;
+                    oIT.Lines.UserFields.Fields.Item("U_SOL_ITEM_PRINCIPAL").Value = detail.kodeProdukPrincipal;
                     oIT.Lines.ItemCode = itemCode;
                     oIT.Lines.Quantity = detail.quantity;
                     oIT.Lines.FromWarehouseCode = inventoryTransfer.fromWarehouse;

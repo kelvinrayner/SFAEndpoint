@@ -153,6 +153,7 @@ namespace SFAEndpoint.Controllers
                             oReturn.Lines.BaseEntry = docEntryDO;
                             oReturn.Lines.BaseType = 15;
                             oReturn.Lines.BaseLine = lineNum;
+                            oReturn.Lines.UserFields.Fields.Item("U_SOL_ITEM_PRINCIPAL").Value = detail.kodeProdukPrincipal;
                             oReturn.Lines.ItemCode = itemCode;
                             oReturn.Lines.Quantity = detail.quantity;
                             oReturn.Lines.WarehouseCode = whsCode;
@@ -274,6 +275,7 @@ namespace SFAEndpoint.Controllers
                                 oCreditMemo.Lines.BaseEntry = docEntryARInv;
                                 oCreditMemo.Lines.BaseType = 13;
                                 oCreditMemo.Lines.BaseLine = lineNum;
+                                oCreditMemo.Lines.UserFields.Fields.Item("U_SOL_ITEM_PRINCIPAL").Value = detail.kodeProdukPrincipal;
                                 oCreditMemo.Lines.ItemCode = itemCode;
                                 oCreditMemo.Lines.Quantity = detail.quantity;
                                 oCreditMemo.Lines.WarehouseCode = whsCode;
@@ -494,6 +496,7 @@ namespace SFAEndpoint.Controllers
                                     connection.Close();
                                 }
 
+                                oCreditMemo.Lines.UserFields.Fields.Item("U_SOL_ITEM_PRINCIPAL").Value = detail.kodeProdukPrincipal;
                                 oCreditMemo.Lines.ItemCode = itemCode;
                                 oCreditMemo.Lines.Quantity = detail.quantity;
                                 oCreditMemo.Lines.WarehouseCode = detail.warehouseCode;

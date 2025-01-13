@@ -288,6 +288,7 @@ namespace SFAEndpoint.Controllers
                         connection.Close();
                     }
 
+                    oSales.Lines.UserFields.Fields.Item("U_SOL_ITEM_PRINCIPAL").Value = detail.kodeProdukPrincipal;
                     oSales.Lines.ItemCode = itemCode;
                     oSales.Lines.Quantity = detail.quantity;
                     oSales.Lines.UnitPrice = detail.unitPrice;

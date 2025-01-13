@@ -100,6 +100,7 @@ namespace SFAEndpoint.Controllers
                     //oIT.Lines.BaseEntry = -1;
                     oIT.Lines.BaseType = SAPbobsCOM.InvBaseDocTypeEnum.Empty;
                     //oIT.Lines.BaseLine = detail.lineNumSAP;
+                    oIT.Lines.UserFields.Fields.Item("U_SOL_ITEM_PRINCIPAL").Value = detail.kodeProdukPrincipal;
                     oIT.Lines.FromWarehouseCode = parameter.fromWarehouse;
                     oIT.Lines.WarehouseCode = parameter.toWarehouse;
                     oIT.Lines.ItemCode = itemCode;
