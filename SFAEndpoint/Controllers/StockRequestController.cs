@@ -28,6 +28,8 @@ namespace SFAEndpoint.Controllers
 
             var connection = new HanaConnection(_connectionStringHana);
 
+            DateTime tanggal = parameter.requestDate.ToDateTime(TimeOnly.MinValue);
+
             try
             {
                 //Declare all SAPbobsCOM untuk DI API UDO
@@ -47,7 +49,7 @@ namespace SFAEndpoint.Controllers
                 oGeneralData.SetProperty("U_SOL_SALES_CODE", parameter.salesCode);
                 oGeneralData.SetProperty("U_SOL_SALES_NAME", parameter.salesName);
                 oGeneralData.SetProperty("U_SOL_REF_SKA_NUM", parameter.skaRefrenceNumber);
-                oGeneralData.SetProperty("U_SOL_REQ_DATE", Convert.ToDateTime(parameter.requestDate));
+                oGeneralData.SetProperty("U_SOL_REQ_DATE", tanggal);
                 oGeneralData.SetProperty("U_SOL_STATUS", "OPEN");
 
                 foreach(var detail in parameter.detail)
@@ -82,6 +84,7 @@ namespace SFAEndpoint.Controllers
                     //Specify data for child UDO
                     oSons = oGeneralData.Child("SOL_D_STOCK_REQ");
                     oSon = oSons.Add();
+                    oSon.SetProperty("U_SOL_ITEM_PRINCIPAL", detail.kodeProdukPrincipal);
                     oSon.SetProperty("U_SOL_ITEM_CODE", itemCode);
                     oSon.SetProperty("U_SOL_ITEM_NAME", itemName);
                     oSon.SetProperty("U_SOL_QUANTITY", detail.quantity);

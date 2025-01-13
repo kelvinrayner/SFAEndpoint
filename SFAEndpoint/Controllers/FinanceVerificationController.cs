@@ -52,7 +52,7 @@ namespace SFAEndpoint.Controllers
                 oGeneralData.SetProperty("U_SOL_SALES_NAME", parameter.salesName);
                 oGeneralData.SetProperty("U_SOL_REF_SKA_NUM", parameter.skaRefrenceNumber);
                 //oGeneralData.SetProperty("U_SOL_DOC_TOTAL", 100000);
-                oGeneralData.SetProperty("U_SOL_REQ_DATE", Convert.ToDateTime(parameter.requestDate));
+                oGeneralData.SetProperty("U_SOL_REQ_DATE", requestDate);
                 oGeneralData.SetProperty("U_SOL_WILAYAH", parameter.wilayah);
                 oGeneralData.SetProperty("U_SOL_ACCT_TRF", parameter.accountTransfer);
                 oGeneralData.SetProperty("U_SOL_STATUS", "OPEN");
@@ -89,6 +89,7 @@ namespace SFAEndpoint.Controllers
                     //Specify data for child UDO
                     oSons = oGeneralData.Child("SOL_D_FIN_VERIF");
                     oSon = oSons.Add();
+                    oSon.SetProperty("U_SOL_ITEM_PRINCIPAL", detail.kodeProdukPrincipal);
                     oSon.SetProperty("U_SOL_ITEM_CODE", itemCode);
                     oSon.SetProperty("U_SOL_ITEM_NAME", itemName);
                     oSon.SetProperty("U_SOL_QUANTITY", detail.quantity);
