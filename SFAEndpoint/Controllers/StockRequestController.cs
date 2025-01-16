@@ -56,6 +56,7 @@ namespace SFAEndpoint.Controllers
                 {
                     string itemCode = "";
                     string itemName = "";
+                    string whsCode = "";
 
                     using (connection)
                     {
@@ -78,6 +79,22 @@ namespace SFAEndpoint.Controllers
                             }
                         }
 
+                        string queryStringWhsCode = "CALL SOL_SP_ADDON_SFA_INT_GET_WHS_BIN_CODE('" + detail.toBinCode + "')";
+
+                        using (var commandWhsCode = new HanaCommand(queryStringWhsCode, connection))
+                        {
+                            using (var readerWhsCode = commandWhsCode.ExecuteReader())
+                            {
+                                if (readerWhsCode.HasRows)
+                                {
+                                    while (readerWhsCode.Read())
+                                    {
+                                        whsCode = readerWhsCode["WhsCode"].ToString();
+                                    }
+                                }
+                            }
+                        }
+
                         connection.Close();
                     }
 
@@ -90,7 +107,7 @@ namespace SFAEndpoint.Controllers
                     oSon.SetProperty("U_SOL_QUANTITY", detail.quantity);
                     oSon.SetProperty("U_SOL_FROM_WHS", detail.fromWarehouse);
                     oSon.SetProperty("U_SOL_FROM_BIN", detail.fromBinCode);
-                    oSon.SetProperty("U_SOL_TO_WHS", detail.toWarehouse);
+                    oSon.SetProperty("U_SOL_TO_WHS", whsCode);
                     oSon.SetProperty("U_SOL_TO_BIN", detail.toBinCode);
                 }
 

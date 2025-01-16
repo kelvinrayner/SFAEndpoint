@@ -79,7 +79,7 @@ namespace SFAEndpoint.Controllers
                                                 {
                                                     inventoryTransferRequestDetail = new InventoryTransferRequestDetail
                                                     {
-                                                        lineNumSAP = Convert.ToInt32(reader["lineNum"]),
+                                                        lineNumSAP = Convert.ToInt32(readerDetail["lineNum"]),
                                                         itemCode = readerDetail["itemCode"].ToString(),
                                                         itemName = readerDetail["itemName"].ToString(),
                                                         qty = Convert.ToDouble(readerDetail["quantity"])
@@ -96,6 +96,7 @@ namespace SFAEndpoint.Controllers
                                         docEntrySAP = docEntry,
                                         docNumSAP = reader["docnumSAP"].ToString(),
                                         docDate = Convert.ToDateTime(reader["docDate"]),
+                                        salesCode = Convert.ToInt32(reader["salesCode"]),
                                         sfaRefrenceNumber = reader["sfaRefrenceNumber"].ToString(),
                                         detail = listInventoryTransferRequestDetail
                                     };

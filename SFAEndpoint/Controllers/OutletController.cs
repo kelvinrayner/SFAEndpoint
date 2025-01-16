@@ -26,91 +26,9 @@ namespace SFAEndpoint.Controllers
         Data data = new Data();
         InsertDILogService log = new InsertDILogService();
 
-        //[HttpPost("/sapapi/sfaintegration/outlet/master/all")]
-        //public IActionResult GetAllOutlet()
-        //{
-        //    Outlet outlet = new Outlet();
-
-        //    var connection = new HanaConnection(_connectionStringHana);
-
-        //    try
-        //    {
-        //        List<Outlet> listOutlet = new List<Outlet>();
-
-        //        using (connection)
-        //        {
-        //            connection.Open();
-
-        //            string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_OUTLET('')";
-
-        //            using (var command = new HanaCommand(queryString, connection))
-        //            {
-        //                using (var reader = command.ExecuteReader())
-        //                {
-        //                    if (!reader.HasRows)
-        //                    {
-        //                        return StatusCode(StatusCodes.Status404NotFound, new ErrorResponse
-        //                        {
-        //                            responseCode = "404",
-        //                            responseMessage = "Outlet not found.",
-
-        //                        });
-        //                    }
-        //                    else
-        //                    {
-        //                        while (reader.Read())
-        //                        {
-        //                            outlet = new Outlet
-        //                            {
-        //                                kodePelanggan = reader["kodePelanggan"].ToString(),
-        //                                namaPelanggan = reader["namaPelanggan"].ToString(),
-        //                                alamatPelanggan = reader["alamatPelanggan"].ToString(),
-        //                                kodeTermOfPayment = reader["kodeTermOfPayment"].ToString(),
-        //                                kodeTypeOutlet = reader["kodeTypeOutlet"].ToString(),
-        //                                kodeGroupOutlet = "NA",
-        //                                kodeGroupHarga = reader["kodeGroupHarga"].ToString(),
-        //                                defaultTypePembayaran = reader["defaultTypePembayaran"].ToString(),
-        //                                flagOutletRegister = reader["flagOutletRegister"].ToString(),
-        //                                kodeDistributor = reader["kodeDistributor"].ToString(),
-        //                            };
-
-        //                            listOutlet.Add(outlet);
-        //                        }
-
-        //                        data = new Data
-        //                        {
-        //                            data = listOutlet
-        //                        };
-        //                    }
-        //                }
-        //            }
-        //            connection.Close();
-        //        }
-        //        return Ok(data);
-        //    }
-        //    catch (HanaException hx)
-        //    {
-        //        return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
-        //        {
-        //            responseCode = "500",
-        //            responseMessage = "HANA Error: " + hx.Message,
-
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
-        //        {
-        //            responseCode = "500",
-        //            responseMessage = ex.Message,
-
-        //        });
-        //    }
-        //}
-
         [HttpPost("/sapapi/sfaintegration/outlet/master")]
         [Authorize]
-        public IActionResult GetSpesificOutlet()
+        public IActionResult GetAllOutlet()
         {
             Outlet outlet = new Outlet();
 
@@ -162,6 +80,78 @@ namespace SFAEndpoint.Controllers
                                 data = new Data
                                 {
                                     data = listOutlet
+                                };
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+                return Ok(data);
+            }
+            catch (HanaException hx)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                {
+                    responseCode = "500",
+                    responseMessage = "HANA Error: " + hx.Message,
+
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                {
+                    responseCode = "500",
+                    responseMessage = ex.Message,
+
+                });
+            }
+        }
+
+        [HttpPost("/sapapi/sfaintegration/outlet")]
+        [Authorize]
+        public IActionResult GetSpesificOutlet(OutletSpesificParameter parameter)
+        {
+            OutletSpesific outlet = new OutletSpesific();
+
+            var connection = new HanaConnection(_connectionStringHana);
+
+            try
+            {
+                using (connection)
+                {
+                    connection.Open();
+
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_OUTLET_SPESIFIC('" + parameter.kodePelangganSFA + "')";
+
+                    using (var command = new HanaCommand(queryString, connection))
+                    {
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (!reader.HasRows)
+                            {
+                                return StatusCode(StatusCodes.Status404NotFound, new StatusResponse
+                                {
+                                    responseCode = "404",
+                                    responseMessage = "Outlet not found.",
+
+                                });
+                            }
+                            else
+                            {
+                                while (reader.Read())
+                                {
+                                    outlet = new OutletSpesific
+                                    {
+                                        kodePelangganSFA = reader["kodePelangganSFA"].ToString(),
+                                        kodePelanggan = reader["kodePelangganSAP"].ToString(),
+                                        namaPelanggan = reader["namaPelanggan"].ToString()
+                                    };
+                                }
+
+                                data = new Data
+                                {
+                                    data = outlet
                                 };
                             }
                         }
@@ -393,7 +383,7 @@ namespace SFAEndpoint.Controllers
 
                 if (string.IsNullOrEmpty(parameter.kodePelangganSAP))
                 {
-                    parameter.kodePelanggan = "";
+                    parameter.kodePelangganSAP = "";
                 }
 
                 SAPbobsCOM.Company oCompany = sboConnection.oCompany;
@@ -410,6 +400,7 @@ namespace SFAEndpoint.Controllers
                 table.UserFields.Fields.Item("U_SOL_DEFAULT_PEMBAYARAN").Value = parameter.defaultTypePembayaran;
                 table.UserFields.Fields.Item("U_SOL_FLAG").Value = parameter.flagOutletRegister;
                 table.UserFields.Fields.Item("U_SOL_KODE_CABANG").Value = parameter.kodeDistributor;
+                table.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
 
                 if (table.Add() != 0)
                 {
