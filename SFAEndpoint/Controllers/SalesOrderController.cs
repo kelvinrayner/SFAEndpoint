@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Data.Common;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -109,6 +111,7 @@ namespace SFAEndpoint.Controllers
                                         detail = listSalesOrderDetail,
                                         kodeCabang = reader["kodeCabang"].ToString(),
                                         salesOrderAmount = Convert.ToDouble(reader["salesOrderAmount"]),
+                                        customerRefNumSAP = reader["customerRefNum"].ToString(),
                                         sfaRefrenceNumber = reader["sfaRefrenceNumber"].ToString(),
                                     };
                                 }
@@ -146,7 +149,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/salesorder/new")]
         [Authorize]
-        public IActionResult PostSalesOrder([FromBody] SalesOrderParameter parameter)
+        public IActionResult PostSalesOrder([FromBody] List<SalesOrderParameter> requests)
         {
             SBOConnection sboConnection = new SBOConnection();
 
@@ -160,84 +163,18 @@ namespace SFAEndpoint.Controllers
             string salesPerson = "";
             string customerGroup = "";
 
-            DateTime tanggal = parameter.tanggal.ToDateTime(TimeOnly.MinValue);
-
             try
             {
                 var connection = new HanaConnection(_connectionStringHana);
 
-                using (connection)
+                foreach (var request in requests)
                 {
-                    connection.Open();
-
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_FMS_WILAYAH_SO(" + parameter.salesCode + ")";
-
-                    using (var command = new HanaCommand(queryString, connection))
-                    {
-                        using (var reader = command.ExecuteReader())
-                        {
-                            if (reader.HasRows)
-                            {
-                                while (reader.Read())
-                                {
-                                    wilayah = reader["U_SOL_WILAYAH"].ToString();
-                                }
-                            }
-                        }
-                    }
-
-                    string queryStringSalesPerson = "CALL SOL_SP_ADDON_SFA_INT_FMS_SALES_PERSON_SO('" + parameter.salesCode + "')";
-
-                    using (var commandSalesPerson = new HanaCommand(queryStringSalesPerson, connection))
-                    {
-                        using (var readerSalesPerson = commandSalesPerson.ExecuteReader())
-                        {
-                            if (readerSalesPerson.HasRows)
-                            {
-                                while (readerSalesPerson.Read())
-                                {
-                                    salesPerson = readerSalesPerson["PrcCode"].ToString();
-                                }
-                            }
-                        }
-                    }
-
-                    string queryStringCustomerGroup = "CALL SOL_SP_ADDON_SFA_INT_FMS_CUST_GROUP_SO('" + parameter.cardCode + "')";
-
-                    using (var commandCustomerGroup = new HanaCommand(queryStringCustomerGroup, connection))
-                    {
-                        using (var readerCustomerGroup = commandCustomerGroup.ExecuteReader())
-                        {
-                            if (readerCustomerGroup.HasRows)
-                            {
-                                while (readerCustomerGroup.Read())
-                                {
-                                    customerGroup = readerCustomerGroup["PrcCode"].ToString();
-                                }
-                            }
-                        }
-                    }
-
-                    connection.Close();
-                }
-
-                SAPbobsCOM.Documents oSales = sboConnection.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oOrders);
-
-                oSales.CardCode = parameter.cardCode;
-                oSales.DocDate = tanggal;
-                oSales.DocDueDate = tanggal;
-                oSales.SalesPersonCode = parameter.salesCode;
-                oSales.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
-                //oSales.UserFields.Fields.Item("U_SOL_WILAYAH").Value = oRecWilayah.Fields.Item("U_SOL_WILAYAH").Value;
-                oSales.UserFields.Fields.Item("U_SOL_WILAYAH").Value = wilayah;
-
-                foreach (var detail in parameter.detail)
-                {
+                    DateTime tanggal = request.tanggal.ToDateTime(TimeOnly.MinValue);
                     using (connection)
                     {
                         connection.Open();
 
-                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_FMS_WILAYAH_SO(" + request.salesCode + ")";
 
                         using (var command = new HanaCommand(queryString, connection))
                         {
@@ -247,98 +184,166 @@ namespace SFAEndpoint.Controllers
                                 {
                                     while (reader.Read())
                                     {
-                                        itemCode = reader["ItemCode"].ToString();
-                                        itemName = reader["ItemName"].ToString();
+                                        wilayah = reader["U_SOL_WILAYAH"].ToString();
                                     }
                                 }
                             }
                         }
 
-                        string queryStringGroupSO = "CALL SOL_SP_ADDON_SFA_INT_FMS_PRODUCT_GROUP_SO('" + itemCode + "')";
+                        string queryStringSalesPerson = "CALL SOL_SP_ADDON_SFA_INT_FMS_SALES_PERSON_SO('" + request.salesCode + "')";
 
-                        using (var commandGroupSO = new HanaCommand(queryStringGroupSO, connection))
+                        using (var commandSalesPerson = new HanaCommand(queryStringSalesPerson, connection))
                         {
-                            using (var readerGroupSO = commandGroupSO.ExecuteReader())
+                            using (var readerSalesPerson = commandSalesPerson.ExecuteReader())
                             {
-                                if (readerGroupSO.HasRows)
+                                if (readerSalesPerson.HasRows)
                                 {
-                                    while (readerGroupSO.Read())
+                                    while (readerSalesPerson.Read())
                                     {
-                                        productGroup = readerGroupSO["PrcCode"].ToString();
+                                        salesPerson = readerSalesPerson["PrcCode"].ToString();
                                     }
                                 }
                             }
                         }
 
-                        string queryStringBrand = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRAND_SO('" + itemCode + "')";
+                        string queryStringCustomerGroup = "CALL SOL_SP_ADDON_SFA_INT_FMS_CUST_GROUP_SO('" + request.cardCode + "')";
 
-                        using (var commandBrand = new HanaCommand(queryStringBrand, connection))
+                        using (var commandCustomerGroup = new HanaCommand(queryStringCustomerGroup, connection))
                         {
-                            using (var readerBrand = commandBrand.ExecuteReader())
+                            using (var readerCustomerGroup = commandCustomerGroup.ExecuteReader())
                             {
-                                if (readerBrand.HasRows)
+                                if (readerCustomerGroup.HasRows)
                                 {
-                                    while (readerBrand.Read())
+                                    while (readerCustomerGroup.Read())
                                     {
-                                        brand = readerBrand["PrcCode"].ToString();
+                                        customerGroup = readerCustomerGroup["PrcCode"].ToString();
                                     }
                                 }
                             }
                         }
+
                         connection.Close();
                     }
 
-                    oSales.Lines.UserFields.Fields.Item("U_SOL_ITEM_PRINCIPAL").Value = detail.kodeProdukPrincipal;
-                    oSales.Lines.ItemCode = itemCode;
-                    oSales.Lines.Quantity = detail.quantity;
-                    oSales.Lines.UnitPrice = detail.unitPrice;
-                    oSales.Lines.WarehouseCode = detail.warehouseCode;
-                    oSales.Lines.CostingCode = detail.kodeCabang;
-                    oSales.Lines.CostingCode2 = productGroup;
-                    oSales.Lines.CostingCode3 = brand;
-                    oSales.Lines.CostingCode4 = salesPerson;
-                    oSales.Lines.CostingCode5 = customerGroup;
-                    oSales.Lines.UserFields.Fields.Item("U_SOL_HARGA_PRODUK").Value = detail.unitPrice;
+                    SAPbobsCOM.Documents oSales = sboConnection.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oOrders);
 
-                    oSales.Lines.Add();
-                }
+                    oSales.CardCode = request.cardCode;
+                    oSales.DocDate = tanggal;
+                    oSales.DocDueDate = tanggal;
+                    oSales.SalesPersonCode = request.salesCode;
+                    oSales.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
+                    //oSales.UserFields.Fields.Item("U_SOL_WILAYAH").Value = oRecWilayah.Fields.Item("U_SOL_WILAYAH").Value;
+                    oSales.UserFields.Fields.Item("U_SOL_WILAYAH").Value = wilayah;
 
-                int retval = 0;
-
-                retval = oSales.Add();
-
-                if (retval != 0)
-                {
-                    sboConnection.oCompany.Disconnect();
-
-                    string objectLog = "SO - ADD";
-                    string status = "ERROR";
-                    string errorMsg = "Create Sales Order Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
-
-                    log.insertLog(objectLog, status, errorMsg);
-
-                    return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                    foreach (var detail in request.detail)
                     {
-                        responseCode = "500",
-                        responseMessage = errorMsg
-                    });
-                }
-                else
-                {
-                    sboConnection.oCompany.Disconnect();
+                        using (connection)
+                        {
+                            connection.Open();
 
-                    string objectLog = "SO - ADD";
-                    string status = "SUCCESS";
-                    string errorMsg = "";
+                            string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
 
-                    log.insertLog(objectLog, status, errorMsg);
+                            using (var command = new HanaCommand(queryString, connection))
+                            {
+                                using (var reader = command.ExecuteReader())
+                                {
+                                    if (reader.HasRows)
+                                    {
+                                        while (reader.Read())
+                                        {
+                                            itemCode = reader["ItemCode"].ToString();
+                                            itemName = reader["ItemName"].ToString();
+                                        }
+                                    }
+                                }
+                            }
 
-                    return StatusCode(StatusCodes.Status200OK, new StatusResponse
+                            string queryStringGroupSO = "CALL SOL_SP_ADDON_SFA_INT_FMS_PRODUCT_GROUP_SO('" + itemCode + "')";
+
+                            using (var commandGroupSO = new HanaCommand(queryStringGroupSO, connection))
+                            {
+                                using (var readerGroupSO = commandGroupSO.ExecuteReader())
+                                {
+                                    if (readerGroupSO.HasRows)
+                                    {
+                                        while (readerGroupSO.Read())
+                                        {
+                                            productGroup = readerGroupSO["PrcCode"].ToString();
+                                        }
+                                    }
+                                }
+                            }
+
+                            string queryStringBrand = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRAND_SO('" + itemCode + "')";
+
+                            using (var commandBrand = new HanaCommand(queryStringBrand, connection))
+                            {
+                                using (var readerBrand = commandBrand.ExecuteReader())
+                                {
+                                    if (readerBrand.HasRows)
+                                    {
+                                        while (readerBrand.Read())
+                                        {
+                                            brand = readerBrand["PrcCode"].ToString();
+                                        }
+                                    }
+                                }
+                            }
+                            connection.Close();
+                        }
+
+                        oSales.Lines.UserFields.Fields.Item("U_SOL_ITEM_PRINCIPAL").Value = detail.kodeProdukPrincipal;
+                        oSales.Lines.ItemCode = itemCode;
+                        oSales.Lines.Quantity = detail.quantity;
+                        oSales.Lines.UnitPrice = detail.unitPrice;
+                        oSales.Lines.WarehouseCode = detail.warehouseCode;
+                        oSales.Lines.CostingCode = detail.kodeCabang;
+                        oSales.Lines.CostingCode2 = productGroup;
+                        oSales.Lines.CostingCode3 = brand;
+                        oSales.Lines.CostingCode4 = salesPerson;
+                        oSales.Lines.CostingCode5 = customerGroup;
+                        oSales.Lines.UserFields.Fields.Item("U_SOL_HARGA_PRODUK").Value = detail.unitPrice;
+
+                        oSales.Lines.Add();
+                    }
+
+                    int retval = 0;
+
+                    retval = oSales.Add();
+
+                    if (retval != 0)
                     {
-                        responseCode = "200",
-                        responseMessage = "Sales Order added to SAP."
-                    });
+                        sboConnection.oCompany.Disconnect();
+
+                        string objectLog = "SO - ADD";
+                        string status = "ERROR";
+                        string errorMsg = "Create Sales Order Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                        log.insertLog(objectLog, status, errorMsg);
+
+                        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                        {
+                            responseCode = "500",
+                            responseMessage = errorMsg
+                        });
+                    }
+                    else
+                    {
+                        string objectLog = "SO - ADD";
+                        string status = "SUCCESS";
+                        string errorMsg = "";
+
+                        log.insertLog(objectLog, status, errorMsg);                    
+                    }
                 }
+
+                sboConnection.oCompany.Disconnect();
+
+                return StatusCode(StatusCodes.Status201Created, new StatusResponse
+                {
+                    responseCode = "201",
+                    responseMessage = "Sales Order added to SAP."
+                });
             }
             catch (Exception ex)
             {

@@ -11,6 +11,7 @@
         public string kodeCabang { get; set; }
         public string invoiceType { get; set; }
         public decimal invoiceAmount { get; set; }
+        public string customerRefNumSAP { get; set; }
         public string sfaRefrenceNumber { get; set; }
     }
 }

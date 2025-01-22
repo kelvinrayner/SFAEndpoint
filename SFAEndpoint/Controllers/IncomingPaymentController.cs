@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Data.Common;
+using System.Reflection.Metadata;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sap.Data.Hana;
 using SAPbobsCOM;
@@ -100,7 +102,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/incomingpayment/new")]
         [Authorize]
-        public IActionResult PostIncoming([FromBody] PostIncomingPaymentParameter parameter)
+        public IActionResult PostIncoming([FromBody] List<PostIncomingPaymentParameter> requests)
         {
             var connection = new HanaConnection(_connectionStringHana);
 
@@ -108,90 +110,91 @@ namespace SFAEndpoint.Controllers
 
             sboConnection.connectSBO();
 
-            DateTime tanggal = parameter.tanggal.ToDateTime(TimeOnly.MinValue);
-
             try
             {
-                double docTotalAR = 0;
-
-                using (connection)
+                foreach (var request in requests)
                 {
-                    connection.Open();
+                    DateTime tanggal = request.tanggal.ToDateTime(TimeOnly.MinValue);
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_DOCTOTAL_ARINV(" + parameter.docEntryARInvSAP + ")";
+                    double docTotalAR = 0;
 
-                    using (var command = new HanaCommand(queryString, connection))
+                    using (connection)
                     {
-                        using (var reader = command.ExecuteReader())
+                        connection.Open();
+
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_DOCTOTAL_ARINV(" + request.docEntryARInvSAP + ")";
+
+                        using (var command = new HanaCommand(queryString, connection))
                         {
-                            if (reader.HasRows)
+                            using (var reader = command.ExecuteReader())
                             {
-                                while (reader.Read())
+                                if (reader.HasRows)
                                 {
-                                    docTotalAR = Convert.ToDouble(reader["DocTotal"]);
+                                    while (reader.Read())
+                                    {
+                                        docTotalAR = Convert.ToDouble(reader["DocTotal"]);
+                                    }
                                 }
                             }
                         }
+
+                        connection.Close();
                     }
 
-                    connection.Close();
-                }
+                    SAPbobsCOM.Payments oIncomingPayments;
+                    oIncomingPayments = sboConnection.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oIncomingPayments);
 
-                SAPbobsCOM.Payments oIncomingPayments;
-                oIncomingPayments = sboConnection.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oIncomingPayments);
+                    oIncomingPayments.DocType = SAPbobsCOM.BoRcptTypes.rCustomer;
+                    oIncomingPayments.CardCode = request.kodePelanggan;
+                    oIncomingPayments.DocDate = tanggal;
+                    oIncomingPayments.DocCurrency = "IDR";
+                    //oIncomingPayments.LocalCurrency = SAPbobsCOM.BoYesNoEnum.tYES;
+                    oIncomingPayments.BankAccount = request.bankAccount;
+                    //oIncomingPayments.BankCode = "BRI";
+                    oIncomingPayments.TransferAccount = request.bankAccount;
+                    oIncomingPayments.TransferDate = tanggal;
+                    oIncomingPayments.TransferSum = docTotalAR;
+                    oIncomingPayments.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
 
-                oIncomingPayments.DocType = SAPbobsCOM.BoRcptTypes.rCustomer;
-                oIncomingPayments.CardCode = parameter.kodePelanggan;
-                oIncomingPayments.DocDate = tanggal;
-                oIncomingPayments.DocCurrency = "IDR";
-                //oIncomingPayments.LocalCurrency = SAPbobsCOM.BoYesNoEnum.tYES;
-                oIncomingPayments.BankAccount = parameter.bankAccount;
-                //oIncomingPayments.BankCode = "BRI";
-                oIncomingPayments.TransferAccount = parameter.bankAccount;
-                oIncomingPayments.TransferDate = tanggal;
-                oIncomingPayments.TransferSum = docTotalAR;
-                oIncomingPayments.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
+                    // Add the AR Invoice
+                    oIncomingPayments.Invoices.DocLine = 0;
+                    oIncomingPayments.Invoices.InvoiceType = SAPbobsCOM.BoRcptInvTypes.it_Invoice;
+                    oIncomingPayments.Invoices.DocEntry = Convert.ToInt32(request.docEntryARInvSAP);
 
-                // Add the AR Invoice
-                oIncomingPayments.Invoices.DocLine = 0;
-                oIncomingPayments.Invoices.InvoiceType = SAPbobsCOM.BoRcptInvTypes.it_Invoice;
-                oIncomingPayments.Invoices.DocEntry = Convert.ToInt32(parameter.docEntryARInvSAP);
+                    int retval = oIncomingPayments.Add();
 
-                int retval = oIncomingPayments.Add();
-
-                if (retval != 0)
-                {
-                    sboConnection.oCompany.Disconnect();
-
-                    string objectLog = "INCOMING PAYMENT - ADD";
-                    string status = "ERROR";
-                    string errorMsg = "Create Incoming Payment Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
-
-                    log.insertLog(objectLog, status, errorMsg);
-
-                    return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                    if (retval != 0)
                     {
-                        responseCode = "500",
-                        responseMessage = errorMsg
-                    });
-                }
-                else
-                {
-                    sboConnection.oCompany.Disconnect();
+                        sboConnection.oCompany.Disconnect();
 
-                    string objectLog = "INCOMING PAYMENT - ADD";
-                    string status = "SUCCESS";
-                    string errorMsg = "";
+                        string objectLog = "INCOMING PAYMENT - ADD";
+                        string status = "ERROR";
+                        string errorMsg = "Create Incoming Payment Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                    log.insertLog(objectLog, status, errorMsg);
+                        log.insertLog(objectLog, status, errorMsg);
 
-                    return StatusCode(StatusCodes.Status200OK, new StatusResponse
+                        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                        {
+                            responseCode = "500",
+                            responseMessage = errorMsg
+                        });
+                    }
+                    else
                     {
-                        responseCode = "200",
-                        responseMessage = "Incoming Payment added to SAP."
-                    });
-                }
+                        string objectLog = "INCOMING PAYMENT - ADD";
+                        string status = "SUCCESS";
+                        string errorMsg = "";
 
+                        log.insertLog(objectLog, status, errorMsg);
+                    }
+                }
+                sboConnection.oCompany.Disconnect();
+
+                return StatusCode(StatusCodes.Status200OK, new StatusResponse
+                {
+                    responseCode = "200",
+                    responseMessage = "Incoming Payment added to SAP."
+                });
             }
             catch (HanaException hx)
             {

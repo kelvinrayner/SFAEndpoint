@@ -1,23 +1,21 @@
-﻿using System.Data.Common;
-using System.Reflection.Metadata;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sap.Data.Hana;
 using SAPbobsCOM;
 using SFAEndpoint.Connection;
-using SFAEndpoint.Models;
 using SFAEndpoint.Models.Parameter;
+using SFAEndpoint.Models;
 using SFAEndpoint.Services;
 
 namespace SFAEndpoint.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ReturnController : ControllerBase
+    public class ReturnExistingController : ControllerBase
     {
         private readonly string _connectionStringHana;
 
-        public ReturnController(IConfiguration configuration)
+        public ReturnExistingController(IConfiguration configuration)
         {
             _connectionStringHana = configuration.GetConnectionString("SapHanaConnection");
         }
@@ -25,9 +23,9 @@ namespace SFAEndpoint.Controllers
         Data data = new Data();
         InsertDILogService log = new InsertDILogService();
 
-        [HttpPost("/sapapi/sfaintegration/return/new")]
+        [HttpPost("/sapapi/sfaintegration/return-existing/new")]
         [Authorize]
-        public IActionResult PostReturn([FromBody] List<ReturnParameter> requests)
+        public IActionResult PostReturn([FromBody] List<ReturnExistingParameter> requests)
         {
             SBOConnection sboConnection = new SBOConnection();
 
@@ -63,7 +61,7 @@ namespace SFAEndpoint.Controllers
                     {
                         connection.Open();
 
-                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_RETUR('" + request.sfaRefrenceNumber + "')";
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_RETUR('" + request.docnumDeliveryOrder + "')";
 
                         using (var command = new HanaCommand(queryString, connection))
                         {
@@ -88,7 +86,7 @@ namespace SFAEndpoint.Controllers
                                     return StatusCode(StatusCodes.Status204NoContent, new StatusResponse
                                     {
                                         responseCode = "204",
-                                        responseMessage = "SFA Refrence Number: " + request.sfaRefrenceNumber + " not found."
+                                        responseMessage = "SFA Refrence Number: " + request.docnumDeliveryOrder + " not found."
 
                                     });
                                 }
@@ -106,7 +104,7 @@ namespace SFAEndpoint.Controllers
                             oReturn.DocDate = docDateD0;
                             oReturn.CardCode = request.cardCode;
                             oReturn.SalesPersonCode = request.salesCode;
-                            oReturn.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
+                            //oReturn.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.docnumDeliveryOrder;
                             oReturn.UserFields.Fields.Item("U_SOL_DOC_DATE_SFA").Value = request.tanggal;
                             //oReturn.DocumentsOwner = EmpId;
 
@@ -220,7 +218,7 @@ namespace SFAEndpoint.Controllers
                                 oCreditMemo.DocDate = tanggalARCM;
                                 oCreditMemo.CardCode = request.cardCode;
                                 oCreditMemo.SalesPersonCode = request.salesCode;
-                                oCreditMemo.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
+                                //oCreditMemo.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
                                 //oCreditMemo.UserFields.Fields.Item("U_SOL_DOC_DATE_SFA").Value = parameter.tanggal;
                                 //oReturn.DocumentsOwner = EmpId;
 
@@ -408,7 +406,7 @@ namespace SFAEndpoint.Controllers
                                 oCreditMemo.DocDate = tanggalARCM;
                                 oCreditMemo.CardCode = request.cardCode;
                                 oCreditMemo.SalesPersonCode = request.salesCode;
-                                oCreditMemo.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
+                                //oCreditMemo.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
                                 //oCreditMemo.UserFields.Fields.Item("U_SOL_DOC_DATE_SFA").Value = parameter.tanggal;
                                 //oReturn.DocumentsOwner = EmpId;
 

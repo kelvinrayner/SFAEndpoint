@@ -1,5 +1,6 @@
 ﻿using System.Data.Common;
 using System.Data.SqlClient;
+using System.Reflection.Metadata;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sap.Data.Hana;
@@ -331,7 +332,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPost("/sapapi/sfaintegration/outlet/new")]
         [Authorize]
-        public IActionResult PostOutlet([FromBody] OutletParameter parameter)
+        public IActionResult PostOutlet([FromBody] List<OutletParameter> requests)
         {
             Data data = new Data();
             FeedbackNOO feedback = new FeedbackNOO();
@@ -343,107 +344,117 @@ namespace SFAEndpoint.Controllers
 
             try
             {
-                string outletCodeSAP = "";
+                List<FeedbackNOO> listFeedbackNOO = new List<FeedbackNOO>();
 
-                using (connectionHana)
+                foreach (var request in requests)
                 {
-                    connectionHana.Open();
+                    string outletCodeSAP = "";
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_CUST_CODE_SAP('" + parameter.kodePelanggan + "')";
-
-                    using (var command = new HanaCommand(queryString, connectionHana))
+                    using (connectionHana)
                     {
-                        using (var reader = command.ExecuteReader())
+                        connectionHana.Open();
+
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_CUST_CODE_SAP('" + request.kodePelanggan + "')";
+
+                        using (var command = new HanaCommand(queryString, connectionHana))
                         {
-                            if (reader.HasRows)
+                            using (var reader = command.ExecuteReader())
                             {
-                                while (reader.Read())
+                                if (reader.HasRows)
                                 {
-                                    outletCodeSAP = reader["CardCode"].ToString();
+                                    while (reader.Read())
+                                    {
+                                        outletCodeSAP = reader["CardCode"].ToString();
+                                    }
                                 }
                             }
                         }
+                        connectionHana.Close();
                     }
-                    connectionHana.Close();
-                }
 
-                if (parameter.flagOutletRegister == "C")
-                {
-                    parameter.flagOutletRegister = "Y";
-                }
-
-                if (parameter.defaultTypePembayaran == "K")
-                {
-                    parameter.defaultTypePembayaran = "Kredit";
-                }
-                else if(parameter.defaultTypePembayaran == "T")
-                {
-                    parameter.defaultTypePembayaran = "Tunai";
-                }
-
-                if (string.IsNullOrEmpty(parameter.kodePelangganSAP))
-                {
-                    parameter.kodePelangganSAP = "";
-                }
-
-                SAPbobsCOM.Company oCompany = sboConnection.oCompany;
-                SAPbobsCOM.UserTable table = table = oCompany.UserTables.Item("SOL_MASTER_OUTLET");
-
-                table.UserFields.Fields.Item("U_SOL_CARD_CODE").Value = parameter.kodePelanggan;
-                table.UserFields.Fields.Item("U_SOL_CARD_CODE_SAP").Value = parameter.kodePelangganSAP;
-                table.UserFields.Fields.Item("U_SOL_CARD_NAME").Value = parameter.namaPelanggan;
-                table.UserFields.Fields.Item("U_SOL_STREET").Value = parameter.alamatPelanggan;
-                table.UserFields.Fields.Item("U_SOL_PAY_TERMS").Value = parameter.kodeTermOfPayment;
-                table.UserFields.Fields.Item("U_SOL_CUST_GROUP").Value = parameter.kodeTypeOutlet;
-                table.UserFields.Fields.Item("U_SOL_GROUP_OUTLET").Value = parameter.kodeGroupOutlet;
-                table.UserFields.Fields.Item("U_SOL_GROUP_HARGA").Value = parameter.kodeGroupHarga;
-                table.UserFields.Fields.Item("U_SOL_DEFAULT_PEMBAYARAN").Value = parameter.defaultTypePembayaran;
-                table.UserFields.Fields.Item("U_SOL_FLAG").Value = parameter.flagOutletRegister;
-                table.UserFields.Fields.Item("U_SOL_KODE_CABANG").Value = parameter.kodeDistributor;
-                table.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = parameter.sfaRefrenceNumber;
-
-                if (table.Add() != 0)
-                {
-                    sboConnection.oCompany.Disconnect();
-
-                    string objectLog = "OUTLET - ADD";
-                    string status = "ERROR";
-                    string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
-
-                    log.insertLog(objectLog, status, errorMsg);
-
-                    return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                    if (request.flagOutletRegister == "C")
                     {
-                        responseCode = "500",
-                        responseMessage = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", ""),
+                        request.flagOutletRegister = "Y";
+                    }
 
-                    });
+                    if (request.defaultTypePembayaran == "K")
+                    {
+                        request.defaultTypePembayaran = "Kredit";
+                    }
+                    else if (request.defaultTypePembayaran == "T")
+                    {
+                        request.defaultTypePembayaran = "Tunai";
+                    }
+
+                    if (string.IsNullOrEmpty(request.kodePelangganSAP))
+                    {
+                        request.kodePelangganSAP = "";
+                    }
+
+                    SAPbobsCOM.Company oCompany = sboConnection.oCompany;
+                    SAPbobsCOM.UserTable table = table = oCompany.UserTables.Item("SOL_MASTER_OUTLET");
+
+                    table.UserFields.Fields.Item("U_SOL_CARD_CODE").Value = request.kodePelanggan;
+                    table.UserFields.Fields.Item("U_SOL_CARD_CODE_SAP").Value = request.kodePelangganSAP;
+                    table.UserFields.Fields.Item("U_SOL_CARD_NAME").Value = request.namaPelanggan;
+                    table.UserFields.Fields.Item("U_SOL_STREET").Value = request.alamatPelanggan;
+                    table.UserFields.Fields.Item("U_SOL_PAY_TERMS").Value = request.kodeTermOfPayment;
+                    table.UserFields.Fields.Item("U_SOL_CUST_GROUP").Value = request.kodeTypeOutlet;
+                    table.UserFields.Fields.Item("U_SOL_GROUP_OUTLET").Value = request.kodeGroupOutlet;
+                    table.UserFields.Fields.Item("U_SOL_GROUP_HARGA").Value = request.kodeGroupHarga;
+                    table.UserFields.Fields.Item("U_SOL_DEFAULT_PEMBAYARAN").Value = request.defaultTypePembayaran;
+                    table.UserFields.Fields.Item("U_SOL_FLAG").Value = request.flagOutletRegister;
+                    table.UserFields.Fields.Item("U_SOL_KODE_CABANG").Value = request.kodeDistributor;
+                    table.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
+
+                    if (table.Add() != 0)
+                    {
+                        sboConnection.oCompany.Disconnect();
+
+                        string objectLog = "OUTLET - ADD";
+                        string status = "ERROR";
+                        string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                        log.insertLog(objectLog, status, errorMsg);
+
+                        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                        {
+                            responseCode = "500",
+                            responseMessage = errorMsg
+
+                        });
+                    }
+                    else
+                    {
+                        sboConnection.oCompany.Disconnect();
+
+                        string objectLog = "OUTLET - ADD";
+                        string status = "SUCCESS";
+                        string errorMsg = "";
+
+                        log.insertLog(objectLog, status, errorMsg);
+
+                        feedback = new FeedbackNOO
+                        {
+                            custNoSFA = request.kodePelanggan,
+                            date = DateTime.Now,
+                            refInterfaceId = request.sfaRefrenceNumber,
+                            custNoSAP = outletCodeSAP
+                        };
+
+                        listFeedbackNOO.Add(feedback);
+                    }
                 }
-                else
+
+                data = new Data
                 {
-                    sboConnection.oCompany.Disconnect();
+                    data = listFeedbackNOO
+                };
 
-                    string objectLog = "OUTLET - ADD";
-                    string status = "SUCCESS";
-                    string errorMsg = "";
-
-                    log.insertLog(objectLog, status, errorMsg);
-
-                    feedback = new FeedbackNOO
-                    {
-                        custNoSFA = parameter.kodePelanggan,
-                        date = DateTime.Now,
-                        refInterfaceId = parameter.sfaRefrenceNumber,
-                        custNoSAP = outletCodeSAP
-                    };
-
-                    data = new Data
-                    {
-                        data = feedback
-                    };
-
-                    return Ok(data);
-                }
+                return StatusCode(StatusCodes.Status201Created, new StatusResponseData
+                {
+                    data = data
+                });
             }
             catch (Exception ex)
             {
@@ -460,7 +471,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPut("/sapapi/sfaintegration/outlet/update")]
         [Authorize]
-        public IActionResult UpdateOutlet([FromBody] OutletParameter parameter)
+        public IActionResult UpdateOutlet([FromBody] List<OutletParameter> requests)
         {
             Data data = new Data();
             FeedbackNOO feedback = new FeedbackNOO();
@@ -471,171 +482,181 @@ namespace SFAEndpoint.Controllers
 
             try
             {
-                string code = "";
-                string outletCodeSAP = "";
+                List<FeedbackNOO> listFeedbackNOO = new List<FeedbackNOO>();
 
-                var connection = new HanaConnection(_connectionStringHana);
-                var connectionSqlServer = new SqlConnection(_connectionStringSqlServer);
-
-                using (connection)
+                foreach (var request in requests) 
                 {
-                    connection.Open();
+                    string code = "";
+                    string outletCodeSAP = "";
 
-                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_CODE_UDT_OUTLET('" + parameter.kodePelanggan + "')";
+                    var connection = new HanaConnection(_connectionStringHana);
+                    var connectionSqlServer = new SqlConnection(_connectionStringSqlServer);
 
-                    using (var command = new HanaCommand(queryString, connection))
+                    using (connection)
                     {
-                        using (var reader = command.ExecuteReader())
-                        {
-                            if (!reader.HasRows)
-                            {
-                                return StatusCode(StatusCodes.Status404NotFound, new StatusResponse
-                                {
-                                    responseCode = "404",
-                                    responseMessage = "UDT Code not found.",
+                        connection.Open();
 
-                                });
-                            }
-                            else
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_CODE_UDT_OUTLET('" + request.kodePelanggan + "')";
+
+                        using (var command = new HanaCommand(queryString, connection))
+                        {
+                            using (var reader = command.ExecuteReader())
                             {
-                                while (reader.Read())
+                                if (!reader.HasRows)
                                 {
-                                    code = reader["Code"].ToString();
+                                    return StatusCode(StatusCodes.Status404NotFound, new StatusResponse
+                                    {
+                                        responseCode = "404",
+                                        responseMessage = "UDT Code not found.",
+
+                                    });
+                                }
+                                else
+                                {
+                                    while (reader.Read())
+                                    {
+                                        code = reader["Code"].ToString();
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    string queryStringOutletCode = "CALL SOL_SP_ADDON_SFA_INT_CUST_CODE_SAP('" + parameter.kodePelanggan + "')";
+                        string queryStringOutletCode = "CALL SOL_SP_ADDON_SFA_INT_CUST_CODE_SAP('" + request.kodePelanggan + "')";
 
-                    using (var commandOutletCode = new HanaCommand(queryString, connection))
-                    {
-                        using (var readerOutletCode = commandOutletCode.ExecuteReader())
+                        using (var commandOutletCode = new HanaCommand(queryString, connection))
                         {
-                            if (readerOutletCode.HasRows)
+                            using (var readerOutletCode = commandOutletCode.ExecuteReader())
                             {
-                                while (readerOutletCode.Read())
+                                if (readerOutletCode.HasRows)
                                 {
-                                    outletCodeSAP = readerOutletCode["CardCode"].ToString();
+                                    while (readerOutletCode.Read())
+                                    {
+                                        outletCodeSAP = readerOutletCode["CardCode"].ToString();
+                                    }
                                 }
                             }
                         }
-                    }
-                    connection.Close();
-                }
-
-                if (parameter.flagOutletRegister == "C")
-                {
-                    parameter.flagOutletRegister = "Y";
-                }
-
-                if (parameter.defaultTypePembayaran == "K")
-                {
-                    parameter.defaultTypePembayaran = "Kredit";
-                }
-                else if (parameter.defaultTypePembayaran == "T")
-                {
-                    parameter.defaultTypePembayaran = "Tunai";
-                }
-
-                SAPbobsCOM.Company oCompany = sboConnection.oCompany;
-                SAPbobsCOM.UserTable table = table = oCompany.UserTables.Item("SOL_MASTER_OUTLET");
-
-
-                if (table.GetByKey(code))
-                {
-                    if(parameter.namaPelanggan != "")
-                    {
-                        table.UserFields.Fields.Item("U_SOL_CARD_NAME").Value = parameter.namaPelanggan;
-                    }
-                    if (parameter.alamatPelanggan != "")
-                    {
-                        table.UserFields.Fields.Item("U_SOL_STREET").Value = parameter.alamatPelanggan;
-                    }
-                    if (parameter.kodeTermOfPayment != "")
-                    {
-                        table.UserFields.Fields.Item("U_SOL_PAY_TERMS").Value = parameter.kodeTermOfPayment;
-                    }
-                    if (parameter.kodeTypeOutlet != "")
-                    {
-                        table.UserFields.Fields.Item("U_SOL_CUST_GROUP").Value = parameter.kodeTypeOutlet;
-                    }
-                    if (parameter.kodeGroupOutlet != "")
-                    {
-                        table.UserFields.Fields.Item("U_SOL_GROUP_OUTLET").Value = parameter.kodeGroupOutlet;
-                    }
-                    if (parameter.kodeGroupHarga != "")
-                    {
-                        table.UserFields.Fields.Item("U_SOL_GROUP_HARGA").Value = parameter.kodeGroupHarga;
-                    }
-                    if (parameter.defaultTypePembayaran != "")
-                    {
-                        table.UserFields.Fields.Item("U_SOL_DEFAULT_PEMBAYARAN").Value = parameter.defaultTypePembayaran;
-                    }
-                    if (parameter.flagOutletRegister != "")
-                    {
-                        table.UserFields.Fields.Item("U_SOL_FLAG").Value = parameter.flagOutletRegister;
-                    }
-                    if (parameter.kodeDistributor != "")
-                    {
-                        table.UserFields.Fields.Item("U_SOL_KODE_CABANG").Value = parameter.kodeDistributor;
+                        connection.Close();
                     }
 
-                    if (table.Update() != 0)
+                    if (request.flagOutletRegister == "C")
                     {
-                        sboConnection.oCompany.Disconnect();
+                        request.flagOutletRegister = "Y";
+                    }
 
-                        string objectLog = "OUTLET - UPDATE";
-                        string status = "ERROR";
-                        string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+                    if (request.defaultTypePembayaran == "K")
+                    {
+                        request.defaultTypePembayaran = "Kredit";
+                    }
+                    else if (request.defaultTypePembayaran == "T")
+                    {
+                        request.defaultTypePembayaran = "Tunai";
+                    }
 
-                        log.insertLog(objectLog, status, errorMsg);
+                    SAPbobsCOM.Company oCompany = sboConnection.oCompany;
+                    SAPbobsCOM.UserTable table = table = oCompany.UserTables.Item("SOL_MASTER_OUTLET");
 
-                        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+
+                    if (table.GetByKey(code))
+                    {
+                        if (request.namaPelanggan != "")
                         {
-                            responseCode = "500",
-                            responseMessage = "Update Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", ""),
+                            table.UserFields.Fields.Item("U_SOL_CARD_NAME").Value = request.namaPelanggan;
+                        }
+                        if (request.alamatPelanggan != "")
+                        {
+                            table.UserFields.Fields.Item("U_SOL_STREET").Value = request.alamatPelanggan;
+                        }
+                        if (request.kodeTermOfPayment != "")
+                        {
+                            table.UserFields.Fields.Item("U_SOL_PAY_TERMS").Value = request.kodeTermOfPayment;
+                        }
+                        if (request.kodeTypeOutlet != "")
+                        {
+                            table.UserFields.Fields.Item("U_SOL_CUST_GROUP").Value = request.kodeTypeOutlet;
+                        }
+                        if (request.kodeGroupOutlet != "")
+                        {
+                            table.UserFields.Fields.Item("U_SOL_GROUP_OUTLET").Value = request.kodeGroupOutlet;
+                        }
+                        if (request.kodeGroupHarga != "")
+                        {
+                            table.UserFields.Fields.Item("U_SOL_GROUP_HARGA").Value = request.kodeGroupHarga;
+                        }
+                        if (request.defaultTypePembayaran != "")
+                        {
+                            table.UserFields.Fields.Item("U_SOL_DEFAULT_PEMBAYARAN").Value = request.defaultTypePembayaran;
+                        }
+                        if (request.flagOutletRegister != "")
+                        {
+                            table.UserFields.Fields.Item("U_SOL_FLAG").Value = request.flagOutletRegister;
+                        }
+                        if (request.kodeDistributor != "")
+                        {
+                            table.UserFields.Fields.Item("U_SOL_KODE_CABANG").Value = request.kodeDistributor;
+                        }
 
-                        });
+                        if (table.Update() != 0)
+                        {
+                            sboConnection.oCompany.Disconnect();
+
+                            string objectLog = "OUTLET - UPDATE";
+                            string status = "ERROR";
+                            string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                            log.insertLog(objectLog, status, errorMsg);
+
+                            return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                            {
+                                responseCode = "500",
+                                responseMessage = "Update Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", ""),
+
+                            });
+                        }
+                        else
+                        {
+                            sboConnection.oCompany.Disconnect();
+
+                            string objectLog = "OUTLET - UPDATE";
+                            string status = "SUCCESS";
+                            string errorMsg = "";
+
+                            log.insertLog(objectLog, status, errorMsg);
+
+                            feedback = new FeedbackNOO
+                            {
+                                custNoSFA = request.kodePelanggan,
+                                date = DateTime.Now,
+                                refInterfaceId = request.sfaRefrenceNumber,
+                                custNoSAP = outletCodeSAP
+                            };
+
+                            listFeedbackNOO.Add(feedback);
+                        }
                     }
                     else
                     {
                         sboConnection.oCompany.Disconnect();
 
-                        string objectLog = "OUTLET - UPDATE";
-                        string status = "SUCCESS";
-                        string errorMsg = "";
-
-                        log.insertLog(objectLog, status, errorMsg);
-
-                        feedback = new FeedbackNOO
+                        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
-                            custNoSFA = parameter.kodePelanggan,
-                            date = DateTime.Now,
-                            refInterfaceId = parameter.sfaRefrenceNumber,
-                            custNoSAP = outletCodeSAP
-                        };
+                            responseCode = "500",
+                            responseMessage = "UDT Code not valid.",
 
-                        data = new Data
-                        {
-                            data = feedback
-                        };
-
-                        return Ok(data);
+                        });
                     }
                 }
-                else
+
+                data = new Data
                 {
-                    sboConnection.oCompany.Disconnect();
+                    data = listFeedbackNOO
+                };
 
-                    return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
-                    {
-                        responseCode = "500",
-                        responseMessage = "UDT Code not valid.",
+                return StatusCode(StatusCodes.Status201Created, new StatusResponseData
+                {
+                    data = data
 
-                    });
-                }
-                
+                });
             }
             catch (Exception ex)
             {

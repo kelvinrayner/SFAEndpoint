@@ -103,6 +103,7 @@ namespace SFAEndpoint.Controllers
                                         kodeCabang = reader["kodeCabang"].ToString(),
                                         invoiceType = reader["invoiceType"].ToString(),
                                         invoiceAmount = Convert.ToDecimal(reader["invoiceAmount"]),
+                                        customerRefNumSAP = reader["customerRefNum"].ToString(),
                                         sfaRefrenceNumber = reader["sfaRefrenceNumber"].ToString(),
                                     };
                                 }

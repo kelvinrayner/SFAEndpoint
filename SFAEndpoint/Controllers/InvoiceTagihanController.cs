@@ -66,6 +66,7 @@ namespace SFAEndpoint.Controllers
                                         kodeCabang = reader["kodeCabang"].ToString(),
                                         invoiceType = reader["invoiceType"].ToString(),
                                         tanggalTagih = reader["tanggalTagih"].ToString(),
+                                        sfaRefrenceNumber = reader["sfaRefrenceNumber"].ToString(),
                                     };
 
                                     listInvoiceTagihan.Add(invoiceTagihan);

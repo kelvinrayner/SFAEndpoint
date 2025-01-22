@@ -209,7 +209,7 @@ namespace SFAEndpoint.Controllers
                                     groupHargaDetail = new GroupHargaDetail
                                     {
                                         kodeGroupHarga = reader["kodeGroupHarga"].ToString(),
-                                        kodeProduk = reader["deskripsi"].ToString(),
+                                        kodeProdukPrincipal = reader["kodeProdukPrincipal"].ToString(),
                                         hargaJualKecil = Convert.ToDecimal(reader["hargaJualKecil"]),
                                         hargaJualTengah = 0,
                                         hargaJualBesar = 0

@@ -10,6 +10,7 @@
         public List<SalesOrderDetail> detail { get; set; }
         public string kodeCabang { get; set; }
         public double salesOrderAmount { get; set; }
+        public string customerRefNumSAP { get; set; }
         public string sfaRefrenceNumber { get; set; }
     }
 }

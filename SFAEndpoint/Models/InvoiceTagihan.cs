@@ -13,5 +13,6 @@
         public string kodeCabang { get; set; }
         public string invoiceType { get; set; }
         public string tanggalTagih { get; set; }
+        public string sfaRefrenceNumber { get; set; }
     }
 }

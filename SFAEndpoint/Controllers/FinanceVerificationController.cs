@@ -4,6 +4,7 @@ using Sap.Data.Hana;
 using SFAEndpoint.Connection;
 using SFAEndpoint.Models;
 using SFAEndpoint.Models.Parameter;
+using SFAEndpoint.Services;
 
 namespace SFAEndpoint.Controllers
 {
@@ -18,9 +19,11 @@ namespace SFAEndpoint.Controllers
             _connectionStringHana = configuration.GetConnectionString("SapHanaConnection");
         }
 
+        InsertDILogService log = new InsertDILogService();
+
         [HttpPost("/sapapi/sfaintegration/financeverification/new")]
         [Authorize]
-        public IActionResult PostFinanceVerification([FromBody] FinanceVerificationParameter parameter)
+        public IActionResult PostFinanceVerification([FromBody] List<FinanceVerificationParameter> requests)
         {
             SBOConnection sboConnection = new SBOConnection();
 
@@ -28,89 +31,104 @@ namespace SFAEndpoint.Controllers
 
             var connection = new HanaConnection(_connectionStringHana);
 
-            DateTime requestDate = parameter.requestDate.ToDateTime(TimeOnly.MinValue);
-
             try
             {
-                //Declare all SAPbobsCOM untuk DI API UDO
-                SAPbobsCOM.GeneralService oGeneralService;
-                SAPbobsCOM.GeneralData oGeneralData;
-                SAPbobsCOM.GeneralDataCollection oSons;
-                SAPbobsCOM.GeneralData oSon;
-
-                SAPbobsCOM.CompanyService oSTR = null;
-                oSTR = sboConnection.oCompany.GetCompanyService();
-
-                //Get a handle to the Stock Request UDO
-                oGeneralService = oSTR.GetGeneralService("OFVC");
-
-                //Specify data for main UDO (Header)
-                oGeneralData = oGeneralService.GetDataInterface(SAPbobsCOM.GeneralServiceDataInterfaces.gsGeneralData);
-                oGeneralData.SetProperty("U_SOL_CARD_CODE", parameter.customerCode);
-                oGeneralData.SetProperty("U_SOL_CARD_NAME", parameter.customerName);
-                oGeneralData.SetProperty("U_SOL_SALES_CODE", parameter.salesCode);
-                oGeneralData.SetProperty("U_SOL_SALES_NAME", parameter.salesName);
-                oGeneralData.SetProperty("U_SOL_REF_SKA_NUM", parameter.skaRefrenceNumber);
-                //oGeneralData.SetProperty("U_SOL_DOC_TOTAL", 100000);
-                oGeneralData.SetProperty("U_SOL_REQ_DATE", requestDate);
-                oGeneralData.SetProperty("U_SOL_WILAYAH", parameter.wilayah);
-                oGeneralData.SetProperty("U_SOL_ACCT_TRF", parameter.accountTransfer);
-                oGeneralData.SetProperty("U_SOL_STATUS", "OPEN");
-
-                foreach (var detail in parameter.detail)
+                foreach (var request in requests) 
                 {
-                    string itemCode = "";
-                    string itemName = "";
+                    DateTime requestDate = request.requestDate.ToDateTime(TimeOnly.MinValue);
 
-                    using (connection)
+                    //Declare all SAPbobsCOM untuk DI API UDO
+                    SAPbobsCOM.GeneralService oGeneralService;
+                    SAPbobsCOM.GeneralData oGeneralData;
+                    SAPbobsCOM.GeneralDataCollection oSons;
+                    SAPbobsCOM.GeneralData oSon;
+
+                    SAPbobsCOM.CompanyService oSTR = null;
+                    oSTR = sboConnection.oCompany.GetCompanyService();
+
+                    //Get a handle to the Stock Request UDO
+                    oGeneralService = oSTR.GetGeneralService("OFVC");
+
+                    //Specify data for main UDO (Header)
+                    oGeneralData = oGeneralService.GetDataInterface(SAPbobsCOM.GeneralServiceDataInterfaces.gsGeneralData);
+                    oGeneralData.SetProperty("U_SOL_CARD_CODE", request.customerCode);
+                    oGeneralData.SetProperty("U_SOL_CARD_NAME", request.customerName);
+                    oGeneralData.SetProperty("U_SOL_SALES_CODE", request.salesCode);
+                    oGeneralData.SetProperty("U_SOL_SALES_NAME", request.salesName);
+                    oGeneralData.SetProperty("U_SOL_REF_SKA_NUM", request.skaRefrenceNumber);
+                    //oGeneralData.SetProperty("U_SOL_DOC_TOTAL", 100000);
+                    oGeneralData.SetProperty("U_SOL_REQ_DATE", requestDate);
+                    oGeneralData.SetProperty("U_SOL_WILAYAH", request.wilayah);
+                    oGeneralData.SetProperty("U_SOL_ACCT_TRF", request.accountTransfer);
+                    oGeneralData.SetProperty("U_SOL_STATUS", "OPEN");
+
+                    foreach (var detail in request.detail)
                     {
-                        connection.Open();
+                        string itemCode = "";
+                        string itemName = "";
 
-                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
-
-                        using (var command = new HanaCommand(queryString, connection))
+                        using (connection)
                         {
-                            using (var reader = command.ExecuteReader())
+                            connection.Open();
+
+                            string queryString = "CALL SOL_SP_ADDON_SFA_INT_GET_ITEM_CODE('" + detail.kodeProdukPrincipal + "')";
+
+                            using (var command = new HanaCommand(queryString, connection))
                             {
-                                if (reader.HasRows)
+                                using (var reader = command.ExecuteReader())
                                 {
-                                    while (reader.Read())
+                                    if (reader.HasRows)
                                     {
-                                        itemCode = reader["ItemCode"].ToString();
-                                        itemName = reader["ItemName"].ToString();
+                                        while (reader.Read())
+                                        {
+                                            itemCode = reader["ItemCode"].ToString();
+                                            itemName = reader["ItemName"].ToString();
+                                        }
                                     }
                                 }
                             }
+
+                            connection.Close();
                         }
 
-                        connection.Close();
+                        //Specify data for child UDO
+                        oSons = oGeneralData.Child("SOL_D_FIN_VERIF");
+                        oSon = oSons.Add();
+                        oSon.SetProperty("U_SOL_ITEM_PRINCIPAL", detail.kodeProdukPrincipal);
+                        oSon.SetProperty("U_SOL_ITEM_CODE", itemCode);
+                        oSon.SetProperty("U_SOL_ITEM_NAME", itemName);
+                        oSon.SetProperty("U_SOL_QUANTITY", detail.quantity);
+                        oSon.SetProperty("U_SOL_PRICE", Convert.ToDouble(detail.price));
+                        oSon.SetProperty("U_SOL_WHS_CODE", detail.warehouseCode);
                     }
 
-                    //Specify data for child UDO
-                    oSons = oGeneralData.Child("SOL_D_FIN_VERIF");
-                    oSon = oSons.Add();
-                    oSon.SetProperty("U_SOL_ITEM_PRINCIPAL", detail.kodeProdukPrincipal);
-                    oSon.SetProperty("U_SOL_ITEM_CODE", itemCode);
-                    oSon.SetProperty("U_SOL_ITEM_NAME", itemName);
-                    oSon.SetProperty("U_SOL_QUANTITY", detail.quantity);
-                    oSon.SetProperty("U_SOL_PRICE", Convert.ToDouble(detail.price));
-                    oSon.SetProperty("U_SOL_WHS_CODE", detail.warehouseCode);
-                }
+                    //Add records
+                    oGeneralService.Add(oGeneralData);
 
-                //Add records
-                oGeneralService.Add(oGeneralData);
+                    string objectLog = "FINANCE VERIFICATION - ADD";
+                    string status = "SUCCESS";
+                    string errorMsg = "";
+
+                    log.insertLog(objectLog, status, errorMsg);
+                }
 
                 sboConnection.oCompany.Disconnect();
 
-                return StatusCode(StatusCodes.Status200OK, new StatusResponse
+                return StatusCode(StatusCodes.Status201Created, new StatusResponse
                 {
-                    responseCode = "200",
+                    responseCode = "201",
                     responseMessage = "Finance Verification added to SAP."
                 });
             }
             catch (Exception ex)
             {
                 sboConnection.connectSBO();
+
+                string objectLog = "FINANCE VERIFICATION  - ADD";
+                string status = "ERROR";
+                string errorMsg = "Create Finance Verification Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                log.insertLog(objectLog, status, errorMsg);
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
