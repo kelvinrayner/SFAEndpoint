@@ -174,6 +174,7 @@ namespace SFAEndpoint.Controllers
 
                                 string objectLog = "RETURN - ADD";
                                 string status = "ERROR";
+                                string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                                 string errorMsg = "Create Return Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                                 log.insertLog(objectLog, status, errorMsg);
@@ -181,7 +182,7 @@ namespace SFAEndpoint.Controllers
                                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                 {
                                     responseCode = "500",
-                                    responseMessage = errorMsg
+                                    responseMessage = errorResponse.Substring(0, 255)
                                 });
                             }
                             else
@@ -200,7 +201,7 @@ namespace SFAEndpoint.Controllers
                             return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                             {
                                 responseCode = "500",
-                                responseMessage = ex.Message,
+                                responseMessage = ex.Message.Substring(0, 255),
 
                             });
                         }
@@ -288,6 +289,7 @@ namespace SFAEndpoint.Controllers
 
                                     string objectLog = "AR CREDIT MEMO BASED AR INV - ADD";
                                     string status = "ERROR";
+                                    string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                                     string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                                     log.insertLog(objectLog, status, errorMsg);
@@ -295,7 +297,7 @@ namespace SFAEndpoint.Controllers
                                     return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                     {
                                         responseCode = "500",
-                                        responseMessage = errorMsg
+                                        responseMessage = errorResponse.Substring(0, 255)
                                     });
                                 }
                                 else
@@ -314,7 +316,7 @@ namespace SFAEndpoint.Controllers
                                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                 {
                                     responseCode = "500",
-                                    responseMessage = ex.Message,
+                                    responseMessage = ex.Message.Substring(0, 255),
 
                                 });
                             }
@@ -507,6 +509,7 @@ namespace SFAEndpoint.Controllers
 
                                     string objectLog = "AR CREDIT MEMO - ADD";
                                     string status = "ERROR";
+                                    string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                                     string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                                     log.insertLog(objectLog, status, errorMsg);
@@ -514,7 +517,7 @@ namespace SFAEndpoint.Controllers
                                     return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                     {
                                         responseCode = "500",
-                                        responseMessage = errorMsg
+                                        responseMessage = errorResponse.Substring(0, 255)
                                     });
                                 }
                                 else
@@ -533,7 +536,7 @@ namespace SFAEndpoint.Controllers
                                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                 {
                                     responseCode = "500",
-                                    responseMessage = ex.Message,
+                                    responseMessage = ex.Message.Substring(0, 255),
 
                                 });
                             }
@@ -574,7 +577,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = ex.Message,
+                    responseMessage = ex.Message.Substring(0, 255),
 
                 });
             }

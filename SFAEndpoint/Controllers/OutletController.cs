@@ -413,6 +413,7 @@ namespace SFAEndpoint.Controllers
 
                         string objectLog = "OUTLET - ADD";
                         string status = "ERROR";
+                        string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                         log.insertLog(objectLog, status, errorMsg);
@@ -420,7 +421,7 @@ namespace SFAEndpoint.Controllers
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
                             responseCode = "500",
-                            responseMessage = errorMsg
+                            responseMessage = errorResponse.Substring(0, 255)
 
                         });
                     }
@@ -463,7 +464,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = ex.Message,
+                    responseMessage = ex.Message.Substring(0, 255),
 
                 });
             }
@@ -602,14 +603,15 @@ namespace SFAEndpoint.Controllers
 
                             string objectLog = "OUTLET - UPDATE";
                             string status = "ERROR";
-                            string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+                            string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+                            string errorMsg = "Update Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                             log.insertLog(objectLog, status, errorMsg);
 
                             return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                             {
                                 responseCode = "500",
-                                responseMessage = "Update Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", ""),
+                                responseMessage = errorResponse.Substring(0, 255),
 
                             });
                         }
@@ -665,7 +667,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = ex.Message,
+                    responseMessage = ex.Message.Substring(0, 255),
 
                 });
             }

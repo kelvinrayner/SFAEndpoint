@@ -140,6 +140,7 @@ namespace SFAEndpoint.Controllers
 
                 string objectLog = "STOCK REQUEST  - ADD";
                 string status = "ERROR";
+                string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                 string errorMsg = "Create Stock Request Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                 log.insertLog(objectLog, status, errorMsg);
@@ -147,7 +148,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = errorMsg
+                    responseMessage = errorResponse.Substring(0, 255),
                 });
             }
         }

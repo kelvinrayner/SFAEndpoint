@@ -126,14 +126,16 @@ namespace SFAEndpoint.Controllers
 
                 string objectLog = "FINANCE VERIFICATION  - ADD";
                 string status = "ERROR";
+                string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                 string errorMsg = "Create Finance Verification Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                 log.insertLog(objectLog, status, errorMsg);
+                sboConnection.oCompany.Disconnect();
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = ex.Message,
+                    responseMessage = errorResponse.Substring(0, 255),
 
                 });
             }

@@ -317,6 +317,7 @@ namespace SFAEndpoint.Controllers
 
                         string objectLog = "SO - ADD";
                         string status = "ERROR";
+                        string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Create Sales Order Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                         log.insertLog(objectLog, status, errorMsg);
@@ -324,7 +325,7 @@ namespace SFAEndpoint.Controllers
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
                             responseCode = "500",
-                            responseMessage = errorMsg
+                            responseMessage = errorResponse.Substring(0, 255),
                         });
                     }
                     else
@@ -352,7 +353,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = ex.Message,
+                    responseMessage = ex.Message.Substring(0, 255),
 
                 });
             }

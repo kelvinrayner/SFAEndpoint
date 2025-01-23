@@ -169,6 +169,7 @@ namespace SFAEndpoint.Controllers
 
                         string objectLog = "IT - ADD";
                         string status = "ERROR";
+                        string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Create Inventory Transfer Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                         log.insertLog(objectLog, status, errorMsg);
@@ -176,7 +177,7 @@ namespace SFAEndpoint.Controllers
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
                             responseCode = "500",
-                            responseMessage = errorMsg
+                            responseMessage = errorResponse.Substring(0, 255),
                         });
                     }
                     else
@@ -203,7 +204,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = ex.Message,
+                    responseMessage = ex.Message.Substring(0, 255),
 
                 });
             }

@@ -153,7 +153,7 @@ namespace SFAEndpoint.Controllers
                     //oIncomingPayments.BankCode = "BRI";
                     oIncomingPayments.TransferAccount = request.bankAccount;
                     oIncomingPayments.TransferDate = tanggal;
-                    oIncomingPayments.TransferSum = docTotalAR;
+                    oIncomingPayments.TransferSum = Convert.ToDouble(request.totalAmount);
                     oIncomingPayments.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
 
                     // Add the AR Invoice
@@ -169,6 +169,7 @@ namespace SFAEndpoint.Controllers
 
                         string objectLog = "INCOMING PAYMENT - ADD";
                         string status = "ERROR";
+                        string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Create Incoming Payment Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                         log.insertLog(objectLog, status, errorMsg);
@@ -176,7 +177,7 @@ namespace SFAEndpoint.Controllers
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
                             responseCode = "500",
-                            responseMessage = errorMsg
+                            responseMessage = errorResponse.Substring(0, 255),
                         });
                     }
                     else
@@ -190,9 +191,9 @@ namespace SFAEndpoint.Controllers
                 }
                 sboConnection.oCompany.Disconnect();
 
-                return StatusCode(StatusCodes.Status200OK, new StatusResponse
+                return StatusCode(StatusCodes.Status201Created, new StatusResponse
                 {
-                    responseCode = "200",
+                    responseCode = "201",
                     responseMessage = "Incoming Payment added to SAP."
                 });
             }
@@ -201,7 +202,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = "HANA Error: " + hx.Message,
+                    responseMessage = ("HANA Error: " + hx.Message).Substring(0, 255),
 
                 });
             }
@@ -210,7 +211,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = ex.Message,
+                    responseMessage = ex.Message.Substring(0, 255),
 
                 });
             }

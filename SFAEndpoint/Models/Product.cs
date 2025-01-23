@@ -11,7 +11,7 @@
         public string uomKecil { get; set; }
         public int konversiTengah { get; set; }
         public int konversiBesar { get; set; }
-        public decimal pajak { get; set; }
+        public string pajak { get; set; }
         public int itemGroupCode { get; set; }
         public string itemGroupName { get; set; }
         public string active { get; set; }

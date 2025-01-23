@@ -149,7 +149,7 @@ namespace SFAEndpoint.Controllers
                                         uomKecil = reader["uomKecil"].ToString(),
                                         konversiTengah = 0,
                                         konversiBesar = 0,
-                                        pajak = Convert.ToDecimal(reader["pajak"]),
+                                        pajak = reader["pajak"].ToString(),
                                         itemGroupCode = Convert.ToInt32(reader["itemGroupCode"]),
                                         itemGroupName = reader["itemGroupName"].ToString(),
                                         active = reader["active"].ToString(),
