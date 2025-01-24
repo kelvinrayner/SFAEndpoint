@@ -405,6 +405,13 @@ namespace SFAEndpoint.Controllers
                     table.UserFields.Fields.Item("U_SOL_DEFAULT_PEMBAYARAN").Value = request.defaultTypePembayaran;
                     table.UserFields.Fields.Item("U_SOL_FLAG").Value = request.flagOutletRegister;
                     table.UserFields.Fields.Item("U_SOL_KODE_CABANG").Value = request.kodeDistributor;
+                    table.UserFields.Fields.Item("U_SOL_NAMA_OWNER").Value = request.sfaRefrenceNumber;
+                    table.UserFields.Fields.Item("U_SOL_NOHP_OWNER").Value = request.sfaRefrenceNumber;
+                    table.UserFields.Fields.Item("U_SOL_TELP_PIC").Value = request.sfaRefrenceNumber;
+                    table.UserFields.Fields.Item("U_SOL_KTP_PIC").Value = request.sfaRefrenceNumber;
+                    table.UserFields.Fields.Item("U_SOL_NPWP_PEMILIK").Value = request.sfaRefrenceNumber;
+                    table.UserFields.Fields.Item("U_SOL_EMAIL_CUSTOMER").Value = request.sfaRefrenceNumber;
+                    table.UserFields.Fields.Item("U_SOL_SLS_EMP").Value = request.sfaRefrenceNumber;
                     table.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
 
                     if (table.Add() != 0)
@@ -472,7 +479,7 @@ namespace SFAEndpoint.Controllers
 
         [HttpPut("/sapapi/sfaintegration/outlet/update")]
         [Authorize]
-        public IActionResult UpdateOutlet([FromBody] List<OutletParameter> requests)
+        public IActionResult UpdateOutlet([FromBody] List<UpdateOutletParameter> requests)
         {
             Data data = new Data();
             FeedbackNOO feedback = new FeedbackNOO();
@@ -540,61 +547,31 @@ namespace SFAEndpoint.Controllers
                         connection.Close();
                     }
 
-                    if (request.flagOutletRegister == "C")
-                    {
-                        request.flagOutletRegister = "Y";
-                    }
-
-                    if (request.defaultTypePembayaran == "K")
-                    {
-                        request.defaultTypePembayaran = "Kredit";
-                    }
-                    else if (request.defaultTypePembayaran == "T")
-                    {
-                        request.defaultTypePembayaran = "Tunai";
-                    }
-
                     SAPbobsCOM.Company oCompany = sboConnection.oCompany;
                     SAPbobsCOM.UserTable table = table = oCompany.UserTables.Item("SOL_MASTER_OUTLET");
 
 
                     if (table.GetByKey(code))
                     {
-                        if (request.namaPelanggan != "")
+                        if (request.kodePelanggan != "")
                         {
-                            table.UserFields.Fields.Item("U_SOL_CARD_NAME").Value = request.namaPelanggan;
+                            table.UserFields.Fields.Item("U_SOL_CARD_CODE").Value = request.kodePelanggan;
+                        }
+                        if (request.kodePelangganSAP != "")
+                        {
+                            table.UserFields.Fields.Item("U_SOL_CARD_CODE_SAP").Value = request.kodePelanggan;
                         }
                         if (request.alamatPelanggan != "")
                         {
                             table.UserFields.Fields.Item("U_SOL_STREET").Value = request.alamatPelanggan;
                         }
-                        if (request.kodeTermOfPayment != "")
+                        if (request.telphonePic != "")
                         {
-                            table.UserFields.Fields.Item("U_SOL_PAY_TERMS").Value = request.kodeTermOfPayment;
+                            table.UserFields.Fields.Item("U_SOL_TELP_PIC").Value = request.telphonePic;
                         }
-                        if (request.kodeTypeOutlet != "")
+                        if (request.emailCustomer != "")
                         {
-                            table.UserFields.Fields.Item("U_SOL_CUST_GROUP").Value = request.kodeTypeOutlet;
-                        }
-                        if (request.kodeGroupOutlet != "")
-                        {
-                            table.UserFields.Fields.Item("U_SOL_GROUP_OUTLET").Value = request.kodeGroupOutlet;
-                        }
-                        if (request.kodeGroupHarga != "")
-                        {
-                            table.UserFields.Fields.Item("U_SOL_GROUP_HARGA").Value = request.kodeGroupHarga;
-                        }
-                        if (request.defaultTypePembayaran != "")
-                        {
-                            table.UserFields.Fields.Item("U_SOL_DEFAULT_PEMBAYARAN").Value = request.defaultTypePembayaran;
-                        }
-                        if (request.flagOutletRegister != "")
-                        {
-                            table.UserFields.Fields.Item("U_SOL_FLAG").Value = request.flagOutletRegister;
-                        }
-                        if (request.kodeDistributor != "")
-                        {
-                            table.UserFields.Fields.Item("U_SOL_KODE_CABANG").Value = request.kodeDistributor;
+                            table.UserFields.Fields.Item("U_SOL_EMAIL_CUSTOMER").Value = request.emailCustomer;
                         }
 
                         if (table.Update() != 0)
