@@ -1,6 +1,8 @@
-﻿using System.Reflection.Metadata;
+﻿using System;
+using System.Reflection.Metadata;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Sap.Data.Hana;
 using SFAEndpoint.Models;
 
@@ -55,68 +57,20 @@ namespace SFAEndpoint.Controllers
                             {
                                 while (reader.Read())
                                 {
-                                    List<SalesInvoiceDetail> listSalesInvoiceDetail = new List<SalesInvoiceDetail>();
+                                    DateTime dateOrderDateERP = DateTime.Parse(reader["orderDateERP"].ToString());
+                                    DateTime dateTanggalInvoice = DateTime.Parse(reader["orderDateERP"].ToString());
+                                    DateOnly parsedDateOrderDateERP = DateOnly.FromDateTime(dateOrderDateERP);
+                                    DateOnly parsedDateTanggalInvoice = DateOnly.FromDateTime(dateTanggalInvoice);
+                                    string orderDateERP;
+                                    string tanggalInvoice = parsedDateTanggalInvoice.ToString();
 
-                                    int docEntry;
-                                    docEntry = Convert.ToInt32(reader["docEntry"]);
-
-                                    string invoiceType = reader["invoiceType"].ToString();
-
-                                    if (invoiceType == "INV")
+                                    if (Convert.ToDateTime(reader["orderDateERP"]) < Convert.ToDateTime("2000-01-2"))
                                     {
-                                        string queryStringDetail = "CALL SOL_SP_ADDON_SFA_INT_GET_INVOICE_DETAIL(" + docEntry + ")";
-
-                                        using (var commandDetail = new HanaCommand(queryStringDetail, connection))
-                                        {
-                                            using (var readerDetail = commandDetail.ExecuteReader())
-                                            {
-                                                if (readerDetail.HasRows)
-                                                {
-                                                    while (readerDetail.Read())
-                                                    {
-                                                        salesInvoiceDetail = new SalesInvoiceDetail
-                                                        {
-                                                            lineNumSAP = Convert.ToInt32(readerDetail["lineNumSAP"]),
-                                                            kodeProduk = readerDetail["kodeProduk"].ToString(),
-                                                            kodeProdukPrincipal = readerDetail["kodeProdukPrincipal"].ToString(),
-                                                            qtyInPcs = Convert.ToDecimal(readerDetail["qty"]),
-                                                            priceValue = Convert.ToDecimal(readerDetail["priceValue"]),
-                                                            discountValue = Convert.ToDecimal(readerDetail["discountValue"])
-                                                        };
-
-                                                        listSalesInvoiceDetail.Add(salesInvoiceDetail);
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        orderDateERP = "";
                                     }
                                     else
                                     {
-                                        string queryStringDetail = "CALL SOL_SP_ADDON_SFA_INT_GET_RETUR_DETAIL(" + docEntry + ")";
-
-                                        using (var commandDetail = new HanaCommand(queryStringDetail, connection))
-                                        {
-                                            using (var readerDetail = commandDetail.ExecuteReader())
-                                            {
-                                                if (readerDetail.HasRows)
-                                                {
-                                                    while (readerDetail.Read())
-                                                    {
-                                                        salesInvoiceDetail = new SalesInvoiceDetail
-                                                        {
-                                                            lineNumSAP = Convert.ToInt32(readerDetail["lineNumSAP"]),
-                                                            kodeProduk = readerDetail["kodeProduk"].ToString(),
-                                                            kodeProdukPrincipal = readerDetail["kodeProdukPrincipal"].ToString(),
-                                                            qtyInPcs = Convert.ToDecimal(readerDetail["qty"]),
-                                                            priceValue = Convert.ToDecimal(readerDetail["priceValue"]),
-                                                            discountValue = Convert.ToDecimal(readerDetail["discountValue"])
-                                                        };
-
-                                                        listSalesInvoiceDetail.Add(salesInvoiceDetail);
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        orderDateERP = parsedDateTanggalInvoice.ToString();
                                     }
 
                                     salesInvoice = new SalesInvoice
@@ -124,10 +78,15 @@ namespace SFAEndpoint.Controllers
                                         kodeSalesman = reader["kodeSalesman"].ToString(),
                                         kodeCustomer = reader["kodeCustomer"].ToString(),
                                         orderNoERP = reader["orderNoERP"].ToString(),
-                                        orderDateERP = Convert.ToDateTime(reader["orderDateERP"]),
+                                        orderDateERP = orderDateERP,
                                         noInvoiceERP = reader["noInvoiceERP"].ToString(),
-                                        tanggalInvoice = reader["tanggalInvoice"].ToString(),
-                                        detail = listSalesInvoiceDetail,
+                                        tanggalInvoice = tanggalInvoice,
+                                        lineNumSAP = Convert.ToInt32(reader["lineNumSAP"]),
+                                        kodeProduk = reader["kodeProduk"].ToString(),
+                                        kodeProdukPrincipal = reader["kodeProdukPrincipal"].ToString(),
+                                        qtyInPcs = Convert.ToDecimal(reader["qty"]),
+                                        priceValue = Convert.ToDecimal(reader["priceValue"]),
+                                        discountValue = Convert.ToDecimal(reader["discountValue"]),
                                         kodeCabang = reader["kodeCabang"].ToString(),
                                         invoiceType = reader["invoiceType"].ToString(),
                                         invoiceAmount = Convert.ToDecimal(reader["invoiceAmount"]),

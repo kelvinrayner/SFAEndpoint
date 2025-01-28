@@ -65,6 +65,7 @@ namespace SFAEndpoint.Controllers
                                         noInvoiceERP = reader["noInvoiceERP"].ToString(),
                                         tanggalInvoice = Convert.ToDateTime(reader["tanggalInvoice"]),
                                         invoiceAmount = Convert.ToDecimal(reader["invoiceAmount"]),
+                                        docEntryARInvSAP = reader["docEntryARInvSAP"].ToString(),
                                         sfaRefrenceNumber = reader["sfaRefrenceNumber"].ToString()
                                     };
                                 }
