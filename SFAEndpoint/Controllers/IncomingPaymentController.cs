@@ -178,7 +178,7 @@ namespace SFAEndpoint.Controllers
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
                             responseCode = "500",
-                            responseMessage = errorResponse.Substring(0, 255),
+                            responseMessage = errorResponse.Length > 255 ? errorResponse.Substring(0, 255) : errorResponse,
                         });
                     }
                     else
@@ -212,7 +212,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = ex.Message.Substring(0, 255),
+                    responseMessage = ex.Message.Length > 255 ? ex.Message.Substring(0, 255) : ex.Message,
 
                 });
             }

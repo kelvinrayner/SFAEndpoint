@@ -58,7 +58,32 @@ namespace SFAEndpoint.Controllers
                     oGeneralData.SetProperty("U_SOL_REF_SKA_NUM", request.skaRefrenceNumber);
                     //oGeneralData.SetProperty("U_SOL_DOC_TOTAL", 100000);
                     oGeneralData.SetProperty("U_SOL_REQ_DATE", requestDate);
-                    oGeneralData.SetProperty("U_SOL_WILAYAH", request.wilayah);
+
+                    string wilayah = "";
+                    using (connection)
+                    {
+                        connection.Open();
+
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_WILAYAH_SALES('" + request.salesCode + "')";
+
+                        using (var command = new HanaCommand(queryString, connection))
+                        {
+                            using (var reader = command.ExecuteReader())
+                            {
+                                if (reader.HasRows)
+                                {
+                                    while (reader.Read())
+                                    {
+                                        wilayah = reader["U_SOL_WILAYAH"].ToString();
+                                    }
+                                }
+                            }
+                        }
+
+                        connection.Close();
+                    }
+
+                    oGeneralData.SetProperty("U_SOL_WILAYAH", wilayah);
                     oGeneralData.SetProperty("U_SOL_ACCT_TRF", request.accountTransfer);
                     oGeneralData.SetProperty("U_SOL_STATUS", "OPEN");
 
@@ -135,7 +160,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = errorResponse.Substring(0, 255),
+                    responseMessage = errorResponse.Length > 255 ? errorResponse.Substring(0, 255) : errorResponse,
 
                 });
             }

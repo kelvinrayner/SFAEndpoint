@@ -162,6 +162,7 @@ namespace SFAEndpoint.Controllers
             string brand = "";
             string salesPerson = "";
             string customerGroup = "";
+            string whsCode = "";
 
             try
             {
@@ -289,6 +290,23 @@ namespace SFAEndpoint.Controllers
                                     }
                                 }
                             }
+
+                            string queryStringWhsCode = "CALL SOL_SP_ADDON_SFA_INT_WHS_CODE_BASED_WILAYAH('" + request.salesCode + "')";
+
+                            using (var commandWhsCode = new HanaCommand(queryStringWhsCode, connection))
+                            {
+                                using (var readerWhsCode = commandWhsCode.ExecuteReader())
+                                {
+                                    if (readerWhsCode.HasRows)
+                                    {
+                                        while (readerWhsCode.Read())
+                                        {
+                                            whsCode = readerWhsCode["WhsCode"].ToString();
+                                        }
+                                    }
+                                }
+                            }
+
                             connection.Close();
                         }
 
@@ -296,7 +314,7 @@ namespace SFAEndpoint.Controllers
                         oSales.Lines.ItemCode = itemCode;
                         oSales.Lines.Quantity = detail.quantity;
                         oSales.Lines.UnitPrice = detail.unitPrice;
-                        oSales.Lines.WarehouseCode = detail.warehouseCode;
+                        oSales.Lines.WarehouseCode = whsCode;
                         oSales.Lines.CostingCode = detail.kodeCabang;
                         oSales.Lines.CostingCode2 = productGroup;
                         oSales.Lines.CostingCode3 = brand;
@@ -325,7 +343,7 @@ namespace SFAEndpoint.Controllers
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
                             responseCode = "500",
-                            responseMessage = errorResponse.Substring(0, 255),
+                            responseMessage = errorResponse.Length > 255 ? errorResponse.Substring(0, 255) : errorResponse,
                         });
                     }
                     else
@@ -353,7 +371,7 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
-                    responseMessage = ex.Message.Substring(0, 255),
+                    responseMessage = ex.Message.Length > 255 ? ex.Message.Substring(0, 255) : ex.Message,
 
                 });
             }
