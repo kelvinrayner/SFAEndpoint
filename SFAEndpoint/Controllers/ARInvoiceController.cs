@@ -25,6 +25,8 @@ namespace SFAEndpoint.Controllers
             ARInvoice arInvoice = new ARInvoice();
             ARInvoiceDetail arInvoiceDetail = new ARInvoiceDetail();
 
+            List<ARInvoice> listARInvoice = new List<ARInvoice>();
+
             var connection = new HanaConnection(_connectionStringHana);
 
             try
@@ -106,11 +108,13 @@ namespace SFAEndpoint.Controllers
                                         customerRefNumSAP = reader["customerRefNum"].ToString(),
                                         sfaRefrenceNumber = reader["sfaRefrenceNumber"].ToString(),
                                     };
+
+                                    listARInvoice.Add(arInvoice);
                                 }
 
                                 data = new Data
                                 {
-                                    data = arInvoice
+                                    data = listARInvoice
                                 };
                             }
                         }

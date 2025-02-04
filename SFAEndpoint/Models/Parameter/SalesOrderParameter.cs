@@ -5,6 +5,7 @@
         public string cardCode { get; set; }
         public DateOnly tanggal { get; set; }
         public int salesCode { get; set; }
+        public string customerRefNo { get; set; }
         public string sfaRefrenceNumber { get; set; }
         public List<SalesOrderDetailParameter> detail { get; set; }
     }

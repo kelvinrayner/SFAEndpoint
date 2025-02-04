@@ -163,6 +163,7 @@ namespace SFAEndpoint.Controllers
             string salesPerson = "";
             string customerGroup = "";
             string whsCode = "";
+            string kodeCabang = "";
 
             try
             {
@@ -232,6 +233,7 @@ namespace SFAEndpoint.Controllers
                     oSales.DocDate = tanggal;
                     oSales.DocDueDate = tanggal;
                     oSales.SalesPersonCode = request.salesCode;
+                    oSales.NumAtCard = request.customerRefNo;
                     oSales.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
                     //oSales.UserFields.Fields.Item("U_SOL_WILAYAH").Value = oRecWilayah.Fields.Item("U_SOL_WILAYAH").Value;
                     oSales.UserFields.Fields.Item("U_SOL_WILAYAH").Value = wilayah;
@@ -307,6 +309,22 @@ namespace SFAEndpoint.Controllers
                                 }
                             }
 
+                            string queryStringCabangSales = "CALL SOL_SP_ADDON_SFA_INT_CABANG_SALES('" + request.salesCode + "')";
+
+                            using (var commandCabangSales = new HanaCommand(queryStringCabangSales, connection))
+                            {
+                                using (var readerCabangSales = commandCabangSales.ExecuteReader())
+                                {
+                                    if (readerCabangSales.HasRows)
+                                    {
+                                        while (readerCabangSales.Read())
+                                        {
+                                            kodeCabang = readerCabangSales["U_SOL_BRANCH"].ToString();
+                                        }
+                                    }
+                                }
+                            }
+
                             connection.Close();
                         }
 
@@ -315,7 +333,7 @@ namespace SFAEndpoint.Controllers
                         oSales.Lines.Quantity = detail.quantity;
                         oSales.Lines.UnitPrice = detail.unitPrice;
                         oSales.Lines.WarehouseCode = whsCode;
-                        oSales.Lines.CostingCode = detail.kodeCabang;
+                        oSales.Lines.CostingCode = kodeCabang;
                         oSales.Lines.CostingCode2 = productGroup;
                         oSales.Lines.CostingCode3 = brand;
                         oSales.Lines.CostingCode4 = salesPerson;

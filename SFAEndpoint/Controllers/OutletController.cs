@@ -405,13 +405,13 @@ namespace SFAEndpoint.Controllers
                     table.UserFields.Fields.Item("U_SOL_DEFAULT_PEMBAYARAN").Value = request.defaultTypePembayaran;
                     table.UserFields.Fields.Item("U_SOL_FLAG").Value = request.flagOutletRegister;
                     table.UserFields.Fields.Item("U_SOL_KODE_CABANG").Value = request.kodeDistributor;
-                    table.UserFields.Fields.Item("U_SOL_NAMA_OWNER").Value = request.sfaRefrenceNumber;
-                    table.UserFields.Fields.Item("U_SOL_NOHP_OWNER").Value = request.sfaRefrenceNumber;
-                    table.UserFields.Fields.Item("U_SOL_TELP_PIC").Value = request.sfaRefrenceNumber;
-                    table.UserFields.Fields.Item("U_SOL_KTP_PIC").Value = request.sfaRefrenceNumber;
-                    table.UserFields.Fields.Item("U_SOL_NPWP_PEMILIK").Value = request.sfaRefrenceNumber;
-                    table.UserFields.Fields.Item("U_SOL_EMAIL_CUSTOMER").Value = request.sfaRefrenceNumber;
-                    table.UserFields.Fields.Item("U_SOL_SLS_EMP").Value = request.sfaRefrenceNumber;
+                    table.UserFields.Fields.Item("U_SOL_NAMA_OWNER").Value = request.namaOwner;
+                    table.UserFields.Fields.Item("U_SOL_NOHP_OWNER").Value = request.noHPOwner;
+                    table.UserFields.Fields.Item("U_SOL_TELP_PIC").Value = request.telphonePic;
+                    table.UserFields.Fields.Item("U_SOL_KTP_PIC").Value = request.ktpPemilik;
+                    table.UserFields.Fields.Item("U_SOL_NPWP_PEMILIK").Value = request.npwpPemilik;
+                    table.UserFields.Fields.Item("U_SOL_EMAIL_CUSTOMER").Value = request.emailCustomer;
+                    table.UserFields.Fields.Item("U_SOL_SLS_EMP").Value = request.salesEmployee;
                     table.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
 
                     if (table.Add() != 0)

@@ -116,6 +116,8 @@ namespace SFAEndpoint.Controllers
                                         string salesPerson = "";
                                         string customerGroup = "";
                                         double lineTotal = 0;
+                                        string whsCode = "";
+                                        int lineNum = 0;
 
                                         string queryString = "CALL SOL_SP_ADDON_SFA_INT_FMS_BRANCH_SO(" + request.salesCode + ")";
 
@@ -230,12 +232,29 @@ namespace SFAEndpoint.Controllers
                                             }
                                         }
 
+                                        string queryStringReturn = "CALL SOL_SP_ADDON_SFA_INT_GET_INVOICE_CM_DETAIL(" + docEntryARInv + ", '" + itemCode + "')";
+
+                                        using (var commandReturn = new HanaCommand(queryStringReturn, connection))
+                                        {
+                                            using (var readerReturn = commandReturn.ExecuteReader())
+                                            {
+                                                if (readerReturn.HasRows)
+                                                {
+                                                    while (readerReturn.Read())
+                                                    {
+                                                        lineNum = Convert.ToInt32(readerReturn["lineNumSAP"]);
+                                                        whsCode = readerReturn["whsCode"].ToString();
+                                                    }
+                                                }
+                                            }
+                                        }
+
                                         creditMemoLines = new oCreditMemoLines
                                         {
                                             kodeProdukPrincipal = detail.kodeProdukPrincipal,
                                             itemCode = itemCode,
                                             quantity = detail.quantity,
-                                            warehouseCode = detail.warehouseCode,
+                                            warehouseCode = whsCode,
                                             lineTotal = lineTotal,
                                             branch = branch,
                                             productGroup = productGroup,
@@ -429,7 +448,7 @@ namespace SFAEndpoint.Controllers
                             oCreditMemo.CardCode = request.cardCode;
                             oCreditMemo.SalesPersonCode = request.salesCode;
                             oCreditMemo.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
-                            //oCreditMemo.UserFields.Fields.Item("U_SOL_DOC_DATE_SFA").Value = parameter.tanggal;
+                            oCreditMemo.UserFields.Fields.Item("U_SOL_DOC_DATE_SFA").Value = request.tanggalARCM;
                             //oReturn.DocumentsOwner = EmpId;
 
                             foreach (var detail in listCreditMemoLines)

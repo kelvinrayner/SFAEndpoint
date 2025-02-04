@@ -156,7 +156,7 @@ namespace SFAEndpoint.Controllers
 
                 return StatusCode(StatusCodes.Status201Created, new StatusResponse
                 {
-                    responseCode = "200",
+                    responseCode = "201",
                     responseMessage = "Unloading Stock added to SAP."
                 });
             }
