@@ -434,8 +434,6 @@ namespace SFAEndpoint.Controllers
                     }
                     else
                     {
-                        sboConnection.oCompany.Disconnect();
-
                         string objectLog = "OUTLET - ADD";
                         string status = "SUCCESS";
                         string errorMsg = "";
@@ -453,6 +451,8 @@ namespace SFAEndpoint.Controllers
                         listFeedbackNOO.Add(feedback);
                     }
                 }
+
+                sboConnection.oCompany.Disconnect();
 
                 data = new Data
                 {
@@ -504,7 +504,7 @@ namespace SFAEndpoint.Controllers
                     {
                         connection.Open();
 
-                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_CODE_UDT_OUTLET('" + request.kodePelanggan + "')";
+                        string queryString = "CALL SOL_SP_ADDON_SFA_INT_CODE_UDT_OUTLET('" + request.sfaRefrenceNumber + "')";
 
                         using (var command = new HanaCommand(queryString, connection))
                         {
@@ -528,23 +528,6 @@ namespace SFAEndpoint.Controllers
                                 }
                             }
                         }
-
-                        string queryStringOutletCode = "CALL SOL_SP_ADDON_SFA_INT_CUST_CODE_SAP('" + request.kodePelanggan + "')";
-
-                        using (var commandOutletCode = new HanaCommand(queryString, connection))
-                        {
-                            using (var readerOutletCode = commandOutletCode.ExecuteReader())
-                            {
-                                if (readerOutletCode.HasRows)
-                                {
-                                    while (readerOutletCode.Read())
-                                    {
-                                        outletCodeSAP = readerOutletCode["CardCode"].ToString();
-                                    }
-                                }
-                            }
-                        }
-                        connection.Close();
                     }
 
                     SAPbobsCOM.Company oCompany = sboConnection.oCompany;
@@ -553,14 +536,6 @@ namespace SFAEndpoint.Controllers
 
                     if (table.GetByKey(code))
                     {
-                        if (request.kodePelanggan != "")
-                        {
-                            table.UserFields.Fields.Item("U_SOL_CARD_CODE").Value = request.kodePelanggan;
-                        }
-                        if (request.kodePelangganSAP != "")
-                        {
-                            table.UserFields.Fields.Item("U_SOL_CARD_CODE_SAP").Value = request.kodePelanggan;
-                        }
                         if (request.alamatPelanggan != "")
                         {
                             table.UserFields.Fields.Item("U_SOL_STREET").Value = request.alamatPelanggan;
@@ -594,23 +569,11 @@ namespace SFAEndpoint.Controllers
                         }
                         else
                         {
-                            sboConnection.oCompany.Disconnect();
-
                             string objectLog = "OUTLET - UPDATE";
                             string status = "SUCCESS";
                             string errorMsg = "";
 
                             log.insertLog(objectLog, status, errorMsg);
-
-                            feedback = new FeedbackNOO
-                            {
-                                custNoSFA = request.kodePelanggan,
-                                date = DateTime.Now,
-                                refInterfaceId = request.sfaRefrenceNumber,
-                                custNoSAP = outletCodeSAP
-                            };
-
-                            listFeedbackNOO.Add(feedback);
                         }
                     }
                     else
@@ -626,14 +589,12 @@ namespace SFAEndpoint.Controllers
                     }
                 }
 
-                data = new Data
-                {
-                    data = listFeedbackNOO
-                };
+                sboConnection.oCompany.Disconnect();
 
-                return StatusCode(StatusCodes.Status201Created, new StatusResponseData
+                return StatusCode(StatusCodes.Status201Created, new StatusResponse
                 {
-                    data = data
+                    responseCode = "201",
+                    responseMessage = "Outlet Updated.",
 
                 });
             }
