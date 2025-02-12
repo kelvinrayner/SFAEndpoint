@@ -16,7 +16,7 @@ namespace SFAEndpoint.Controllers
 
         Data data = new Data();
 
-        [HttpPost("/sapapi/sfaintegration/stock-warehouse/master")]
+        [HttpPost("/sapapi/sfaintegration/stockwarehouse/master")]
         [Authorize]
         public IActionResult GetStockWarehouse()
         {
@@ -58,6 +58,7 @@ namespace SFAEndpoint.Controllers
                                         deskripsiProduct = reader["deskripsiProduct"].ToString(),
                                         quantity = Convert.ToDouble(reader["quantity"]),
                                         warehouseCode = reader["warehouseCode"].ToString(),
+                                        kodeCabang = reader["kodeCabang"].ToString()
                                     };
 
                                     listStockWarehouse.Add(stockWarehouse);

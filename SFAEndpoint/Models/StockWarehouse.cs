@@ -6,5 +6,6 @@
         public string deskripsiProduct { get; set; }
         public double quantity { get; set; }
         public string warehouseCode { get; set; }
+        public string kodeCabang { get; set; }
     }
 }
