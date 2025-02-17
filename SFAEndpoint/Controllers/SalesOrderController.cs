@@ -164,14 +164,20 @@ namespace SFAEndpoint.Controllers
             string customerGroup = "";
             string whsCode = "";
             string kodeCabang = "";
+            string sfaRefNum = "";
 
             try
             {
                 var connection = new HanaConnection(_connectionStringHana);
 
+                sboConnection.oCompany.StartTransaction();
+
                 foreach (var request in requests)
                 {
                     DateTime tanggal = request.tanggal.ToDateTime(TimeOnly.MinValue);
+
+                    sfaRefNum = request.sfaRefrenceNumber;
+
                     using (connection)
                     {
                         connection.Open();
@@ -356,7 +362,7 @@ namespace SFAEndpoint.Controllers
                         string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Create Sales Order Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                        log.insertLog(objectLog, status, errorMsg);
+                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
 
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
@@ -370,9 +376,11 @@ namespace SFAEndpoint.Controllers
                         string status = "SUCCESS";
                         string errorMsg = "";
 
-                        log.insertLog(objectLog, status, errorMsg);                    
+                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);                    
                     }
                 }
+
+                sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
                 sboConnection.oCompany.Disconnect();
 
@@ -385,6 +393,14 @@ namespace SFAEndpoint.Controllers
             catch (Exception ex)
             {
                 sboConnection.connectSBO();
+
+                string objectLog = "SO - ADD";
+                string status = "ERROR";
+                string errorMsg = "Create Sales Order Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+
+                sboConnection.oCompany.Disconnect();
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {

@@ -33,10 +33,15 @@ namespace SFAEndpoint.Controllers
 
             var connection = new HanaConnection(_connectionStringHana);
 
+            string sfaRefNum = "";
+            string whsCode = "";
+
             try
             {
+                sboConnection.oCompany.StartTransaction();
                 foreach (var request in requests)
                 {
+                    sfaRefNum = request.sfaRefrenceNumber;
                     int absEntryFrom = 0;
 
                     using (connection)
@@ -59,6 +64,22 @@ namespace SFAEndpoint.Controllers
                             }
                         }
 
+                        string queryStringWhsCode = "CALL SOL_SP_ADDON_SFA_INT_WHS_CODE_BASED_WILAYAH('" + request.salesCode + "')";
+
+                        using (var commandWhsCode = new HanaCommand(queryStringWhsCode, connection))
+                        {
+                            using (var readerWhsCode = commandWhsCode.ExecuteReader())
+                            {
+                                if (readerWhsCode.HasRows)
+                                {
+                                    while (readerWhsCode.Read())
+                                    {
+                                        whsCode = readerWhsCode["WhsCode"].ToString();
+                                    }
+                                }
+                            }
+                        }
+
                         connection.Close();
                     }
 
@@ -67,7 +88,7 @@ namespace SFAEndpoint.Controllers
                     oIT.DocDate = DateTime.Now;
                     oIT.SalesPersonCode = request.salesCode;
                     oIT.FromWarehouse = request.fromWarehouse;
-                    oIT.ToWarehouse = request.toWarehouse;
+                    oIT.ToWarehouse = whsCode;
                     oIT.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
                     oIT.UserFields.Fields.Item("U_SOL_TIPE_IT").Value = "2";
 
@@ -110,7 +131,7 @@ namespace SFAEndpoint.Controllers
                         oIT.Lines.Quantity = detail.quantity;
                         oIT.Lines.Quantity = detail.quantity;
                         oIT.Lines.FromWarehouseCode = request.fromWarehouse;
-                        oIT.Lines.WarehouseCode = request.toWarehouse;
+                        oIT.Lines.WarehouseCode = whsCode;
 
                         oIT.Lines.BinAllocations.SetCurrentLine(0);
                         oIT.Lines.BinAllocations.BinActionType = SAPbobsCOM.BinActionTypeEnum.batFromWarehouse;
@@ -134,7 +155,7 @@ namespace SFAEndpoint.Controllers
                         string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Create Unloading Stock Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                        log.insertLog(objectLog, status, errorMsg);
+                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
 
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
@@ -148,9 +169,10 @@ namespace SFAEndpoint.Controllers
                         string status = "SUCCESS";
                         string errorMsg = "";
 
-                        log.insertLog(objectLog, status, errorMsg);
+                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
                     }
                 }
+                sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
                 sboConnection.oCompany.Disconnect();
 
@@ -163,6 +185,14 @@ namespace SFAEndpoint.Controllers
             catch (Exception ex)
             {
                 sboConnection.connectSBO();
+
+                string objectLog = "UNLOADING STOCK - ADD";
+                string status = "ERROR";
+                string errorMsg = "Create Unloading Stock Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+
+                sboConnection.oCompany.Disconnect();
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {

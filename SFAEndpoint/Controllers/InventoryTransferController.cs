@@ -32,14 +32,18 @@ namespace SFAEndpoint.Controllers
 
             var connection = new HanaConnection(_connectionStringHana);
 
+            string sfaRefNum = "";
+
             try
             {
+                sboConnection.oCompany.StartTransaction();
                 foreach (var request in requests)
                 {
                     int absEntryFrom = 0;
                     int absEntryTo = 0;
                     string fromWhsCode = "";
                     string toWhsCode = "";
+                    sfaRefNum = request.sfaRefrenceNumber;
 
                     using (connection)
                     {
@@ -172,7 +176,7 @@ namespace SFAEndpoint.Controllers
                         string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Create Inventory Transfer Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                        log.insertLog(objectLog, status, errorMsg);
+                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
 
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
@@ -186,9 +190,11 @@ namespace SFAEndpoint.Controllers
                         string status = "SUCCESS";
                         string errorMsg = "";
 
-                        log.insertLog(objectLog, status, errorMsg);
+                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
                     }
                 }
+                sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
+
                 sboConnection.oCompany.Disconnect();
 
                 return StatusCode(StatusCodes.Status201Created, new StatusResponse
@@ -200,6 +206,12 @@ namespace SFAEndpoint.Controllers
             catch (Exception ex)
             {
                 sboConnection.connectSBO();
+
+                string objectLog = "IT - ADD";
+                string status = "ERROR";
+                string errorMsg = "Create Inventory Transfer Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                sboConnection.oCompany.Disconnect();
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {

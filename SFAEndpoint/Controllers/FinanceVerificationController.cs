@@ -31,10 +31,15 @@ namespace SFAEndpoint.Controllers
 
             var connection = new HanaConnection(_connectionStringHana);
 
+            string sfaRefNum = "";
+
             try
             {
+                sboConnection.oCompany.StartTransaction();
                 foreach (var request in requests) 
                 {
+                    sfaRefNum = request.skaRefrenceNumber;
+
                     DateTime requestDate = request.requestDate.ToDateTime(TimeOnly.MinValue);
 
                     //Declare all SAPbobsCOM untuk DI API UDO
@@ -55,7 +60,7 @@ namespace SFAEndpoint.Controllers
                     oGeneralData.SetProperty("U_SOL_CARD_NAME", request.customerName);
                     oGeneralData.SetProperty("U_SOL_SALES_CODE", request.salesCode);
                     oGeneralData.SetProperty("U_SOL_SALES_NAME", request.salesName);
-                    oGeneralData.SetProperty("U_SOL_REF_SKA_NUM", request.skaRefrenceNumber);
+                    oGeneralData.SetProperty("U_SOL_REF_SKA_NUM", sfaRefNum);
                     //oGeneralData.SetProperty("U_SOL_DOC_TOTAL", 100000);
                     oGeneralData.SetProperty("U_SOL_REQ_DATE", requestDate);
 
@@ -92,6 +97,8 @@ namespace SFAEndpoint.Controllers
                         string itemCode = "";
                         string itemName = "";
 
+                        decimal price = Convert.ToDecimal(detail.price) * (100 - Convert.ToDecimal(detail.pajak)) / 100;
+
                         using (connection)
                         {
                             connection.Open();
@@ -123,7 +130,7 @@ namespace SFAEndpoint.Controllers
                         oSon.SetProperty("U_SOL_ITEM_CODE", itemCode);
                         oSon.SetProperty("U_SOL_ITEM_NAME", itemName);
                         oSon.SetProperty("U_SOL_QUANTITY", detail.quantity);
-                        oSon.SetProperty("U_SOL_PRICE", Convert.ToDouble(detail.price));
+                        oSon.SetProperty("U_SOL_PRICE", Convert.ToDouble(price));
                         oSon.SetProperty("U_SOL_WHS_CODE", detail.warehouseCode);
                     }
 
@@ -134,8 +141,9 @@ namespace SFAEndpoint.Controllers
                     string status = "SUCCESS";
                     string errorMsg = "";
 
-                    log.insertLog(objectLog, status, errorMsg);
+                    log.insertLog(objectLog, status, errorMsg, sfaRefNum);
                 }
+                sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
                 sboConnection.oCompany.Disconnect();
 
@@ -147,15 +155,14 @@ namespace SFAEndpoint.Controllers
             }
             catch (Exception ex)
             {
-                sboConnection.connectSBO();
+                sboConnection.oCompany.Disconnect();
 
                 string objectLog = "FINANCE VERIFICATION  - ADD";
                 string status = "ERROR";
                 string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                 string errorMsg = "Create Finance Verification Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                log.insertLog(objectLog, status, errorMsg);
-                sboConnection.oCompany.Disconnect();
+                log.insertLog(objectLog, status, errorMsg, sfaRefNum);
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {

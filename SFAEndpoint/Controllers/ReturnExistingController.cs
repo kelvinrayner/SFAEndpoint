@@ -177,7 +177,7 @@ namespace SFAEndpoint.Controllers
                                 string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                                 string errorMsg = "Create Return Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                                log.insertLog(objectLog, status, errorMsg);
+                                //log.insertLog(objectLog, status, errorMsg);
 
                                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                 {
@@ -191,7 +191,7 @@ namespace SFAEndpoint.Controllers
                                 string status = "SUCCESS";
                                 string errorMsg = "";
 
-                                log.insertLog(objectLog, status, errorMsg);
+                                //log.insertLog(objectLog, status, errorMsg);
                             }
                         }
                         catch (Exception ex)
@@ -292,7 +292,7 @@ namespace SFAEndpoint.Controllers
                                     string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                                     string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                                    log.insertLog(objectLog, status, errorMsg);
+                                    //log.insertLog(objectLog, status, errorMsg);
 
                                     return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                     {
@@ -306,7 +306,7 @@ namespace SFAEndpoint.Controllers
                                     string status = "SUCCESS";
                                     string errorMsg = "";
 
-                                    log.insertLog(objectLog, status, errorMsg);
+                                    //log.insertLog(objectLog, status, errorMsg);
                                 }
                             }
                             catch (Exception ex)
@@ -512,7 +512,7 @@ namespace SFAEndpoint.Controllers
                                     string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                                     string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                                    log.insertLog(objectLog, status, errorMsg);
+                                    //log.insertLog(objectLog, status, errorMsg);
 
                                     return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                     {
@@ -526,7 +526,7 @@ namespace SFAEndpoint.Controllers
                                     string status = "SUCCESS";
                                     string errorMsg = "";
 
-                                    log.insertLog(objectLog, status, errorMsg);
+                                    //log.insertLog(objectLog, status, errorMsg);
                                 }
                             }
                             catch (Exception ex)

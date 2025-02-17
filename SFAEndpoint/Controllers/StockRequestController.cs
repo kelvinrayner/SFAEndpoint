@@ -31,10 +31,15 @@ namespace SFAEndpoint.Controllers
             var connection = new HanaConnection(_connectionStringHana);
             InsertDILogService log = new InsertDILogService();
 
+            string sfaRefNum = "";
+
             try
             {
+                sboConnection.oCompany.StartTransaction();
                 foreach (var request in requests)
                 {
+                    sfaRefNum = request.skaRefrenceNumber;
+
                     DateTime tanggal = request.requestDate.ToDateTime(TimeOnly.MinValue);
 
                     //Declare all SAPbobsCOM untuk DI API UDO
@@ -53,7 +58,7 @@ namespace SFAEndpoint.Controllers
                     oGeneralData = oGeneralService.GetDataInterface(SAPbobsCOM.GeneralServiceDataInterfaces.gsGeneralData);
                     oGeneralData.SetProperty("U_SOL_SALES_CODE", request.salesCode);
                     oGeneralData.SetProperty("U_SOL_SALES_NAME", request.salesName);
-                    oGeneralData.SetProperty("U_SOL_REF_SKA_NUM", request.skaRefrenceNumber);
+                    oGeneralData.SetProperty("U_SOL_REF_SKA_NUM", sfaRefNum);
                     oGeneralData.SetProperty("U_SOL_REQ_DATE", tanggal);
                     oGeneralData.SetProperty("U_SOL_STATUS", "OPEN");
 
@@ -123,8 +128,9 @@ namespace SFAEndpoint.Controllers
                     string status = "SUCCESS";
                     string errorMsg = "";
 
-                    log.insertLog(objectLog, status, errorMsg);
+                    log.insertLog(objectLog, status, errorMsg, sfaRefNum);
                 }
+                sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
                 sboConnection.oCompany.Disconnect();
 
@@ -136,14 +142,16 @@ namespace SFAEndpoint.Controllers
             }
             catch (Exception ex)
             {
-                sboConnection.oCompany.Disconnect();
+                sboConnection.connectSBO();
 
                 string objectLog = "STOCK REQUEST  - ADD";
                 string status = "ERROR";
                 string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                 string errorMsg = "Create Stock Request Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                log.insertLog(objectLog, status, errorMsg);
+                log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+
+                sboConnection.oCompany.Disconnect();
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {

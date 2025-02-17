@@ -111,12 +111,15 @@ namespace SFAEndpoint.Controllers
 
             sboConnection.connectSBO();
 
+            string sfaRefNum = "";
+
             try
             {
+                sboConnection.oCompany.StartTransaction();
                 foreach (var request in requests)
                 {
                     DateTime tanggal = request.tanggal.ToDateTime(TimeOnly.MinValue);
-
+                    sfaRefNum = request.sfaRefrenceNumber;
                     double docTotalAR = 0;
 
                     using (connection)
@@ -173,7 +176,7 @@ namespace SFAEndpoint.Controllers
                         string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Create Incoming Payment Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                        log.insertLog(objectLog, status, errorMsg);
+                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
 
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
@@ -187,9 +190,11 @@ namespace SFAEndpoint.Controllers
                         string status = "SUCCESS";
                         string errorMsg = "";
 
-                        log.insertLog(objectLog, status, errorMsg);
+                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
                     }
                 }
+                sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
+
                 sboConnection.oCompany.Disconnect();
 
                 return StatusCode(StatusCodes.Status201Created, new StatusResponse
@@ -200,6 +205,12 @@ namespace SFAEndpoint.Controllers
             }
             catch (HanaException hx)
             {
+                string objectLog = "INCOMING PAYMENT - ADD";
+                string status = "ERROR";
+                string errorMsg = "Create Incoming Payment Failed, " + hx.Message;
+
+                log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
@@ -209,6 +220,16 @@ namespace SFAEndpoint.Controllers
             }
             catch (Exception ex)
             {
+                sboConnection.connectSBO();
+
+                string objectLog = "INCOMING PAYMENT - ADD";
+                string status = "ERROR";
+                string errorMsg = "Create Incoming Payment Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+
+                sboConnection.oCompany.Disconnect();
+
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
                     responseCode = "500",
