@@ -7,6 +7,7 @@ using SFAEndpoint.Models;
 using SFAEndpoint.Services;
 using Sap.Data.Hana;
 using System.Reflection.Metadata;
+using System.Security.Cryptography;
 
 namespace SFAEndpoint.Controllers
 {
@@ -36,9 +37,12 @@ namespace SFAEndpoint.Controllers
             string sfaRefNum = "";
             string whsCode = "";
 
+            SAPbobsCOM.StockTransfer oIT = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oStockTransfer);
+
             try
             {
                 sboConnection.oCompany.StartTransaction();
+
                 foreach (var request in requests)
                 {
                     sfaRefNum = request.sfaRefrenceNumber;
@@ -82,8 +86,6 @@ namespace SFAEndpoint.Controllers
 
                         connection.Close();
                     }
-
-                    SAPbobsCOM.StockTransfer oIT = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oStockTransfer);
 
                     oIT.DocDate = DateTime.Now;
                     oIT.SalesPersonCode = request.salesCode;
@@ -133,7 +135,7 @@ namespace SFAEndpoint.Controllers
                         oIT.Lines.FromWarehouseCode = request.fromWarehouse;
                         oIT.Lines.WarehouseCode = whsCode;
 
-                        oIT.Lines.BinAllocations.SetCurrentLine(0);
+                        //oIT.Lines.BinAllocations.SetCurrentLine(i);
                         oIT.Lines.BinAllocations.BinActionType = SAPbobsCOM.BinActionTypeEnum.batFromWarehouse;
                         oIT.Lines.BinAllocations.BinAbsEntry = absEntryFrom;
                         oIT.Lines.BinAllocations.Quantity = detail.quantity;
@@ -148,14 +150,28 @@ namespace SFAEndpoint.Controllers
 
                     if (retval != 0)
                     {
-                        sboConnection.oCompany.Disconnect();
-
                         string objectLog = "UNLOADING STOCK - ADD";
                         string status = "ERROR";
                         string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Create Unloading Stock Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                         log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                        if (oIT != null)
+                        {
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oIT);
+                            oIT = null;
+                        }
+
+                        if (sboConnection.oCompany != null)
+                        {
+                            if (sboConnection.oCompany.Connected)
+                            {
+                                sboConnection.oCompany.Disconnect();
+                            }
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                            sboConnection.oCompany = null;
+                        }
 
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
@@ -174,7 +190,21 @@ namespace SFAEndpoint.Controllers
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
-                sboConnection.oCompany.Disconnect();
+                if (oIT != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oIT);
+                    oIT = null;
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 return StatusCode(StatusCodes.Status201Created, new StatusResponse
                 {
@@ -184,7 +214,10 @@ namespace SFAEndpoint.Controllers
             }
             catch (Exception ex)
             {
-                sboConnection.connectSBO();
+                if (sboConnection.oCompany.InTransaction)
+                {
+                    sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                }
 
                 string objectLog = "UNLOADING STOCK - ADD";
                 string status = "ERROR";
@@ -192,7 +225,21 @@ namespace SFAEndpoint.Controllers
 
                 log.insertLog(objectLog, status, errorMsg, sfaRefNum);
 
-                sboConnection.oCompany.Disconnect();
+                if (oIT != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oIT);
+                    oIT = null;
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {

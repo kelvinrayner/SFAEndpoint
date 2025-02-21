@@ -33,29 +33,31 @@ namespace SFAEndpoint.Controllers
 
             string sfaRefNum = "";
 
+            //Declare all SAPbobsCOM untuk DI API UDO
+            SAPbobsCOM.GeneralService oGeneralService;
+            SAPbobsCOM.GeneralData oGeneralData;
+            SAPbobsCOM.GeneralDataCollection oSons;
+            SAPbobsCOM.GeneralData oSon;
+
+            SAPbobsCOM.CompanyService oSTR = null;
+            oSTR = sboConnection.oCompany.GetCompanyService();
+
+            //Get a handle to the Stock Request UDO
+            oGeneralService = oSTR.GetGeneralService("OFVC");
+
+            //Specify data for main UDO (Header)
+            oGeneralData = oGeneralService.GetDataInterface(SAPbobsCOM.GeneralServiceDataInterfaces.gsGeneralData);
+
             try
             {
                 sboConnection.oCompany.StartTransaction();
+
                 foreach (var request in requests) 
                 {
                     sfaRefNum = request.skaRefrenceNumber;
 
                     DateTime requestDate = request.requestDate.ToDateTime(TimeOnly.MinValue);
 
-                    //Declare all SAPbobsCOM untuk DI API UDO
-                    SAPbobsCOM.GeneralService oGeneralService;
-                    SAPbobsCOM.GeneralData oGeneralData;
-                    SAPbobsCOM.GeneralDataCollection oSons;
-                    SAPbobsCOM.GeneralData oSon;
-
-                    SAPbobsCOM.CompanyService oSTR = null;
-                    oSTR = sboConnection.oCompany.GetCompanyService();
-
-                    //Get a handle to the Stock Request UDO
-                    oGeneralService = oSTR.GetGeneralService("OFVC");
-
-                    //Specify data for main UDO (Header)
-                    oGeneralData = oGeneralService.GetDataInterface(SAPbobsCOM.GeneralServiceDataInterfaces.gsGeneralData);
                     oGeneralData.SetProperty("U_SOL_CARD_CODE", request.customerCode);
                     oGeneralData.SetProperty("U_SOL_CARD_NAME", request.customerName);
                     oGeneralData.SetProperty("U_SOL_SALES_CODE", request.salesCode);
@@ -145,7 +147,27 @@ namespace SFAEndpoint.Controllers
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
-                sboConnection.oCompany.Disconnect();
+                if (oGeneralData != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oGeneralData);
+                    oGeneralData = null;
+                }
+
+                if (oGeneralService != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oGeneralService);
+                    oGeneralService = null;
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 return StatusCode(StatusCodes.Status201Created, new StatusResponse
                 {
@@ -155,12 +177,37 @@ namespace SFAEndpoint.Controllers
             }
             catch (Exception ex)
             {
-                sboConnection.oCompany.Disconnect();
+                if (sboConnection.oCompany.InTransaction)
+                {
+                    sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                }
 
                 string objectLog = "FINANCE VERIFICATION  - ADD";
                 string status = "ERROR";
                 string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                 string errorMsg = "Create Finance Verification Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                if (oGeneralData != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oGeneralData);
+                    oGeneralData = null;
+                }
+
+                if (oGeneralService != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oGeneralService);
+                    oGeneralService = null;
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 log.insertLog(objectLog, status, errorMsg, sfaRefNum);
 

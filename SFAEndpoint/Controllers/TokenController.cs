@@ -23,9 +23,6 @@ namespace SFAEndpoint.Controllers
                 {
                     var tokenService = new TokenService();
                     var accessToken = tokenService.GenerateToken(tokenParameter.userId);
-
-                    diApiConnection.oCompany.Disconnect();
-
                     Token token = new Token();
 
                     token = new Token
@@ -38,6 +35,16 @@ namespace SFAEndpoint.Controllers
                     {
                         data = token
                     };
+                }
+
+                if (diApiConnection.oCompany != null)
+                {
+                    if (diApiConnection.oCompany.Connected)
+                    {
+                        diApiConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(diApiConnection.oCompany);
+                    diApiConnection.oCompany = null;
                 }
 
                 return Ok(data);

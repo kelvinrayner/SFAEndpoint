@@ -441,10 +441,10 @@ namespace SFAEndpoint.Controllers
 
                     if (arInvStatus == "C" && arInvCanceled == "N" && docNumIncoming != 0)
                     {
+                        Documents oCreditMemo = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oCreditNotes);
+
                         try
                         {
-                            Documents oCreditMemo = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oCreditNotes);
-
                             DateTime tanggalARCM = request.tanggalARCM.Value.ToDateTime(TimeOnly.MinValue);
 
                             oCreditMemo.DocDate = tanggalARCM;
@@ -476,14 +476,28 @@ namespace SFAEndpoint.Controllers
 
                             if (retval != 0)
                             {
-                                sboConnection.oCompany.Disconnect();
-
                                 string objectLog = "AR CREDIT MEMO - ADD";
                                 string status = "ERROR";
                                 string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                                 string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                                 log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                                if (oCreditMemo != null)
+                                {
+                                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oCreditMemo);
+                                    oCreditMemo = null;
+                                }
+
+                                if (sboConnection.oCompany != null)
+                                {
+                                    if (sboConnection.oCompany.Connected)
+                                    {
+                                        sboConnection.oCompany.Disconnect();
+                                    }
+                                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                    sboConnection.oCompany = null;
+                                }
 
                                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                 {
@@ -498,19 +512,42 @@ namespace SFAEndpoint.Controllers
                                 string errorMsg = "";
 
                                 log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                                if (oCreditMemo != null)
+                                {
+                                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oCreditMemo);
+                                    oCreditMemo = null;
+                                }
                             }
                         }
                         catch (Exception ex)
                         {
-                            sboConnection.connectSBO();
+                            if (sboConnection.oCompany.InTransaction)
+                            {
+                                sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                            }
 
                             string objectLog = "AR CREDIT MEMO - ADD";
                             string status = "ERROR";
                             string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                            log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+                            if (oCreditMemo != null)
+                            {
+                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oCreditMemo);
+                                oCreditMemo = null;
+                            }
 
-                            sboConnection.oCompany.Disconnect();
+                            if (sboConnection.oCompany != null)
+                            {
+                                if (sboConnection.oCompany.Connected)
+                                {
+                                    sboConnection.oCompany.Disconnect();
+                                }
+                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                sboConnection.oCompany = null;
+                            }
+
+                            log.insertLog(objectLog, status, errorMsg, sfaRefNum);
 
                             return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                             {
@@ -523,11 +560,11 @@ namespace SFAEndpoint.Controllers
                     }
                     else if (doStatus == "C" && doCanceled == "N" && arInvStatus == "O" && arInvCanceled == "N")
                     {
+                        Documents oCreditMemo = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oCreditNotes);
+
                         try
                         {
                             DateTime tanggalARCM = request.tanggalARCM.Value.ToDateTime(TimeOnly.MinValue);
-
-                            Documents oCreditMemo = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oCreditNotes);
 
                             oCreditMemo.DocDate = tanggalARCM;
                             oCreditMemo.CardCode = request.cardCode;
@@ -555,14 +592,28 @@ namespace SFAEndpoint.Controllers
 
                             if (retval != 0)
                             {
-                                sboConnection.oCompany.Disconnect();
-
                                 string objectLog = "AR CREDIT MEMO BASED AR INV - ADD";
                                 string status = "ERROR";
                                 string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                                 string errorMsg = "Create AR Credit Memo Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                                 log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                                if (oCreditMemo != null)
+                                {
+                                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oCreditMemo);
+                                    oCreditMemo = null;
+                                }
+
+                                if (sboConnection.oCompany != null)
+                                {
+                                    if (sboConnection.oCompany.Connected)
+                                    {
+                                        sboConnection.oCompany.Disconnect();
+                                    }
+                                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                    sboConnection.oCompany = null;
+                                }
 
                                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                 {
@@ -576,12 +627,21 @@ namespace SFAEndpoint.Controllers
                                 string status = "SUCCESS";
                                 string errorMsg = "";
 
-                                log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+                                log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber); 
+                                
+                                if (oCreditMemo != null)
+                                {
+                                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oCreditMemo);
+                                    oCreditMemo = null;
+                                }
                             }
                         }
                         catch (Exception ex)
                         {
-                            sboConnection.connectSBO();
+                            if (sboConnection.oCompany.InTransaction)
+                            {
+                                sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                            }
 
                             string objectLog = "AR CREDIT MEMO - ADD";
                             string status = "ERROR";
@@ -589,7 +649,21 @@ namespace SFAEndpoint.Controllers
 
                             log.insertLog(objectLog, status, errorMsg, sfaRefNum);
 
-                            sboConnection.oCompany.Disconnect();
+                            if (oCreditMemo != null)
+                            {
+                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oCreditMemo);
+                                oCreditMemo = null;
+                            }
+
+                            if (sboConnection.oCompany != null)
+                            {
+                                if (sboConnection.oCompany.Connected)
+                                {
+                                    sboConnection.oCompany.Disconnect();
+                                }
+                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                sboConnection.oCompany = null;
+                            }
 
                             return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                             {
@@ -601,10 +675,10 @@ namespace SFAEndpoint.Controllers
                     }
                     else if (doStatus == "O" && doCanceled == "N")
                     {
+                        Documents oReturn = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oReturns);
+
                         try
                         {
-                            Documents oReturn = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oReturns);
-
                             oReturn.DocDate = docDateD0;
                             oReturn.CardCode = request.cardCode;
                             oReturn.SalesPersonCode = request.salesCode;
@@ -631,14 +705,28 @@ namespace SFAEndpoint.Controllers
 
                             if (retval != 0)
                             {
-                                sboConnection.oCompany.Disconnect();
-
                                 string objectLog = "RETURN - ADD";
                                 string status = "ERROR";
                                 string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                                 string errorMsg = "Create Return Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                                 log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                                if (oReturn != null)
+                                {
+                                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oReturn);
+                                    oReturn = null;
+                                }
+
+                                if (sboConnection.oCompany != null)
+                                {
+                                    if (sboConnection.oCompany.Connected)
+                                    {
+                                        sboConnection.oCompany.Disconnect();
+                                    }
+                                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                    sboConnection.oCompany = null;
+                                }
 
                                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                                 {
@@ -653,11 +741,20 @@ namespace SFAEndpoint.Controllers
                                 string errorMsg = "";
 
                                 log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                                if (oReturn != null)
+                                {
+                                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oReturn);
+                                    oReturn = null;
+                                }
                             }
                         }
                         catch (Exception ex)
                         {
-                            sboConnection.connectSBO();
+                            if (sboConnection.oCompany.InTransaction)
+                            {
+                                sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                            }
 
                             string objectLog = "RETURN - ADD";
                             string status = "ERROR";
@@ -665,7 +762,21 @@ namespace SFAEndpoint.Controllers
 
                             log.insertLog(objectLog, status, errorMsg, sfaRefNum);
 
-                            sboConnection.oCompany.Disconnect();
+                            if (oReturn != null)
+                            {
+                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oReturn);
+                                oReturn = null;
+                            }
+
+                            if (sboConnection.oCompany != null)
+                            {
+                                if (sboConnection.oCompany.Connected)
+                                {
+                                    sboConnection.oCompany.Disconnect();
+                                }
+                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                sboConnection.oCompany = null;
+                            }
 
                             return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                             {
@@ -687,7 +798,15 @@ namespace SFAEndpoint.Controllers
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
-                sboConnection.oCompany.Disconnect();
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 return StatusCode(StatusCodes.Status201Created, new StatusResponse
                 {
@@ -697,7 +816,20 @@ namespace SFAEndpoint.Controllers
             }
             catch (Exception ex)
             {
-                sboConnection.connectSBO();
+                if (sboConnection.oCompany.InTransaction)
+                {
+                    sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {

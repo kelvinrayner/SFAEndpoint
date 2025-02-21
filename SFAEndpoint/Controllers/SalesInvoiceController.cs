@@ -57,30 +57,14 @@ namespace SFAEndpoint.Controllers
                             {
                                 while (reader.Read())
                                 {
-                                    DateTime dateOrderDateERP = DateTime.Parse(reader["orderDateERP"].ToString());
-                                    DateTime dateTanggalInvoice = DateTime.Parse(reader["orderDateERP"].ToString());
-                                    DateOnly parsedDateOrderDateERP = DateOnly.FromDateTime(dateOrderDateERP);
-                                    DateOnly parsedDateTanggalInvoice = DateOnly.FromDateTime(dateTanggalInvoice);
-                                    string orderDateERP;
-                                    string tanggalInvoice = parsedDateTanggalInvoice.ToString();
-
-                                    if (Convert.ToDateTime(reader["orderDateERP"]) < Convert.ToDateTime("2000-01-2"))
-                                    {
-                                        orderDateERP = "";
-                                    }
-                                    else
-                                    {
-                                        orderDateERP = parsedDateTanggalInvoice.ToString();
-                                    }
-
                                     salesInvoice = new SalesInvoice
                                     {
                                         kodeSalesman = reader["kodeSalesman"].ToString(),
                                         kodeCustomer = reader["kodeCustomer"].ToString(),
                                         orderNoERP = reader["orderNoERP"].ToString(),
-                                        orderDateERP = orderDateERP,
+                                        orderDateERP = reader["orderDateERP"].ToString(),
                                         noInvoiceERP = reader["noInvoiceERP"].ToString(),
-                                        tanggalInvoice = tanggalInvoice,
+                                        tanggalInvoice = reader["tanggalInvoice"].ToString(),
                                         lineNumSAP = Convert.ToInt32(reader["lineNumSAP"]),
                                         kodeProduk = reader["kodeProduk"].ToString(),
                                         kodeProdukPrincipal = reader["kodeProdukPrincipal"].ToString(),

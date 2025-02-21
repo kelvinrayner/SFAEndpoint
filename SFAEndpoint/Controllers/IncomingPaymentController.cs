@@ -113,9 +113,13 @@ namespace SFAEndpoint.Controllers
 
             string sfaRefNum = "";
 
+            SAPbobsCOM.Payments oIncomingPayments;
+            oIncomingPayments = sboConnection.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oIncomingPayments);
+
             try
             {
                 sboConnection.oCompany.StartTransaction();
+
                 foreach (var request in requests)
                 {
                     DateTime tanggal = request.tanggal.ToDateTime(TimeOnly.MinValue);
@@ -145,9 +149,6 @@ namespace SFAEndpoint.Controllers
                         connection.Close();
                     }
 
-                    SAPbobsCOM.Payments oIncomingPayments;
-                    oIncomingPayments = sboConnection.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oIncomingPayments);
-
                     oIncomingPayments.DocType = SAPbobsCOM.BoRcptTypes.rCustomer;
                     oIncomingPayments.CardCode = request.kodePelanggan;
                     oIncomingPayments.DocDate = tanggal;
@@ -169,14 +170,28 @@ namespace SFAEndpoint.Controllers
 
                     if (retval != 0)
                     {
-                        sboConnection.oCompany.Disconnect();
-
                         string objectLog = "INCOMING PAYMENT - ADD";
                         string status = "ERROR";
                         string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Create Incoming Payment Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                         log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                        if (oIncomingPayments != null)
+                        {
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oIncomingPayments);
+                            oIncomingPayments = null;
+                        }
+
+                        if (sboConnection.oCompany != null)
+                        {
+                            if (sboConnection.oCompany.Connected)
+                            {
+                                sboConnection.oCompany.Disconnect();
+                            }
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                            sboConnection.oCompany = null;
+                        }
 
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
@@ -195,7 +210,21 @@ namespace SFAEndpoint.Controllers
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
-                sboConnection.oCompany.Disconnect();
+                if (oIncomingPayments != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oIncomingPayments);
+                    oIncomingPayments = null;
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 return StatusCode(StatusCodes.Status201Created, new StatusResponse
                 {
@@ -220,7 +249,10 @@ namespace SFAEndpoint.Controllers
             }
             catch (Exception ex)
             {
-                sboConnection.connectSBO();
+                if (sboConnection.oCompany.InTransaction)
+                {
+                    sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                }
 
                 string objectLog = "INCOMING PAYMENT - ADD";
                 string status = "ERROR";
@@ -228,7 +260,21 @@ namespace SFAEndpoint.Controllers
 
                 log.insertLog(objectLog, status, errorMsg, sfaRefNum);
 
-                sboConnection.oCompany.Disconnect();
+                if (oIncomingPayments != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oIncomingPayments);
+                    oIncomingPayments = null;
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {

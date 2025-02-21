@@ -34,9 +34,12 @@ namespace SFAEndpoint.Controllers
 
             string sfaRefNum = "";
 
+            SAPbobsCOM.StockTransfer oIT = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oStockTransfer);
+
             try
             {
                 sboConnection.oCompany.StartTransaction();
+
                 foreach (var request in requests)
                 {
                     int absEntryFrom = 0;
@@ -101,8 +104,6 @@ namespace SFAEndpoint.Controllers
                         connection.Close();
                     }
 
-                    SAPbobsCOM.StockTransfer oIT = sboConnection.oCompany.GetBusinessObject(BoObjectTypes.oStockTransfer);
-
                     oIT.DocDate = DateTime.Now;
                     oIT.SalesPersonCode = request.salesCode;
                     oIT.FromWarehouse = fromWhsCode;
@@ -148,13 +149,13 @@ namespace SFAEndpoint.Controllers
                         oIT.Lines.FromWarehouseCode = fromWhsCode;
                         oIT.Lines.WarehouseCode = toWhsCode;
 
-                        oIT.Lines.BinAllocations.SetCurrentLine(0);
+                        //oIT.Lines.BinAllocations.SetCurrentLine(0);
                         oIT.Lines.BinAllocations.BinActionType = SAPbobsCOM.BinActionTypeEnum.batFromWarehouse;
                         oIT.Lines.BinAllocations.BinAbsEntry = absEntryFrom;
                         oIT.Lines.BinAllocations.Quantity = detail.quantity;
                         oIT.Lines.BinAllocations.Add();
 
-                        oIT.Lines.BinAllocations.SetCurrentLine(1);
+                        //oIT.Lines.BinAllocations.SetCurrentLine(1);
                         oIT.Lines.BinAllocations.BinActionType = SAPbobsCOM.BinActionTypeEnum.batToWarehouse;
                         oIT.Lines.BinAllocations.BinAbsEntry = absEntryTo;
                         oIT.Lines.BinAllocations.Quantity = detail.quantity;
@@ -169,14 +170,28 @@ namespace SFAEndpoint.Controllers
 
                     if (retval != 0)
                     {
-                        sboConnection.oCompany.Disconnect();
-
                         string objectLog = "IT - ADD";
                         string status = "ERROR";
                         string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
                         string errorMsg = "Create Inventory Transfer Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                         log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                        if (oIT != null)
+                        {
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oIT);
+                            oIT = null;
+                        }
+
+                        if (sboConnection.oCompany != null)
+                        {
+                            if (sboConnection.oCompany.Connected)
+                            {
+                                sboConnection.oCompany.Disconnect();
+                            }
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                            sboConnection.oCompany = null;
+                        }
 
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
@@ -195,7 +210,21 @@ namespace SFAEndpoint.Controllers
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
-                sboConnection.oCompany.Disconnect();
+                if (oIT != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oIT);
+                    oIT = null;
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 return StatusCode(StatusCodes.Status201Created, new StatusResponse
                 {
@@ -205,13 +234,32 @@ namespace SFAEndpoint.Controllers
             }
             catch (Exception ex)
             {
-                sboConnection.connectSBO();
+                if (sboConnection.oCompany.InTransaction)
+                {
+                    sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                }
 
                 string objectLog = "IT - ADD";
                 string status = "ERROR";
                 string errorMsg = "Create Inventory Transfer Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
-                sboConnection.oCompany.Disconnect();
+                log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+
+                if (oIT != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oIT);
+                    oIT = null;
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
