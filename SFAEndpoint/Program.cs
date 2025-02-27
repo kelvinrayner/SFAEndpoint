@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using SFAEndpoint.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization(); // Add authorization services
 builder.Services.AddControllers();   // Add controllers for handling API requests
+
+//builder.Services.AddHttpClient<TokenController>();
+//builder.Services.AddHttpClient<UnloadingStockController>();
 
 var app = builder.Build();
 

@@ -3,7 +3,6 @@ using SFAEndpoint.Connection;
 using SFAEndpoint.Models;
 using SFAEndpoint.Models.Parameter;
 using SFAEndpoint.Services;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SFAEndpoint.Controllers
 {
@@ -54,10 +53,41 @@ namespace SFAEndpoint.Controllers
                 return StatusCode(StatusCodes.Status401Unauthorized, new StatusResponse
                 {
                     responseCode = "401",
-                    responseMessage = "Invalid credentials.",
+                    responseMessage = "Invalid credentials. " + ex.Message,
 
                 });
             }
         }
+
+        //[HttpPost("/sapapi/sfaintegration/token")]
+        //public async Task<IActionResult> GenerateTokens([FromBody] TokenParameter tokenParameter)
+        //{
+        //    try
+        //    {
+        //        var requestData = new TokenParameter
+        //        {
+        //            userId = tokenParameter.userId,
+        //            password = tokenParameter.password
+        //        };
+
+        //        var content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
+        //        HttpResponseMessage response = await _httpClient.PostAsync("http://192.168.1.92:81/sapapi/token", content);
+        //        //response.EnsureSuccessStatusCode();
+
+        //        string responseString = await response.Content.ReadAsStringAsync();
+        //        var jsonObj = System.Text.Json.JsonSerializer.Deserialize<JsonElement>(responseString);
+
+        //        return StatusCode((int)response.StatusCode, jsonObj);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+        //        {
+        //            responseCode = "500",
+        //            responseMessage =  ex.Message,
+
+        //        }); ;
+        //    }
+        //}
     }
 }

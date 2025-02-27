@@ -30,14 +30,14 @@ namespace SFAEndpoint.Controllers
 
             var connection = new HanaConnection(_connectionStringHana);
             InsertDILogService log = new InsertDILogService();
-
+            List<InsertLog> listLog = new List<InsertLog>();
             string sfaRefNum = "";
 
             //Declare all SAPbobsCOM untuk DI API UDO
-            SAPbobsCOM.GeneralService oGeneralService;
-            SAPbobsCOM.GeneralData oGeneralData;
-            SAPbobsCOM.GeneralDataCollection oSons;
-            SAPbobsCOM.GeneralData oSon;
+            SAPbobsCOM.GeneralService oGeneralService = null;
+            SAPbobsCOM.GeneralData oGeneralData = null;
+            SAPbobsCOM.GeneralDataCollection oSons = null;
+            SAPbobsCOM.GeneralData oSon = null;
 
             SAPbobsCOM.CompanyService oSTR = null;
             oSTR = sboConnection.oCompany.GetCompanyService();
@@ -126,13 +126,22 @@ namespace SFAEndpoint.Controllers
                     //Add records
                     oGeneralService.Add(oGeneralData);
 
-                    string objectLog = "STOCK REQUEST  - ADD";
-                    string status = "SUCCESS";
-                    string errorMsg = "";
+                    var logData = new InsertLog
+                    {
+                        objectLog = "STOCK REQUEST - ADD",
+                        status = "SUCCESS",
+                        errorMessage = "",
+                        sfaRefNumber = sfaRefNum
+                    };
 
-                    log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+                    listLog.Add(logData);
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
+
+                foreach (var dataLog in listLog)
+                {
+                    log.insertLog(dataLog.objectLog, dataLog.status, dataLog.errorMessage, dataLog.sfaRefNumber);
+                }
 
                 if (oGeneralData != null)
                 {

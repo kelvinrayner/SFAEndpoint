@@ -144,6 +144,7 @@ namespace SFAEndpoint.Controllers
                                         kodeProduct = reader["kodeProduct"].ToString(),
                                         kodeProductPrincipal = reader["kodeProductPrincipal"].ToString(),
                                         deskripsiProduct = reader["deskripsiProduct"].ToString(),
+                                        tipeItem = reader["tipeItem"].ToString(),
                                         uomBesar = "",
                                         uomTengah = "",
                                         uomKecil = reader["uomKecil"].ToString(),

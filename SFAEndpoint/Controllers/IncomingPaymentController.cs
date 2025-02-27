@@ -111,9 +111,10 @@ namespace SFAEndpoint.Controllers
 
             sboConnection.connectSBO();
 
+            List<InsertLog> listLog = new List<InsertLog>();
             string sfaRefNum = "";
 
-            SAPbobsCOM.Payments oIncomingPayments;
+            SAPbobsCOM.Payments oIncomingPayments = null;
             oIncomingPayments = sboConnection.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oIncomingPayments);
 
             try
@@ -201,14 +202,23 @@ namespace SFAEndpoint.Controllers
                     }
                     else
                     {
-                        string objectLog = "INCOMING PAYMENT - ADD";
-                        string status = "SUCCESS";
-                        string errorMsg = "";
+                        var logData = new InsertLog
+                        {
+                            objectLog = "INCOMING PAYMENT - ADD",
+                            status = "SUCCESS",
+                            errorMessage = "",
+                            sfaRefNumber = sfaRefNum
+                        };
 
-                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+                        listLog.Add(logData);
                     }
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
+
+                foreach (var dataLog in listLog)
+                {
+                    log.insertLog(dataLog.objectLog, dataLog.status, dataLog.errorMessage, dataLog.sfaRefNumber);
+                }
 
                 if (oIncomingPayments != null)
                 {

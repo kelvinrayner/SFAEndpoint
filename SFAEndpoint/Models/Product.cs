@@ -6,6 +6,7 @@
         public string kodeProduct { get; set; }
         public string kodeProductPrincipal { get; set; }
         public string deskripsiProduct { get; set; }
+        public string tipeItem { get; set; }
         public string uomBesar { get; set; }
         public string uomTengah { get; set; }
         public string uomKecil { get; set; }

@@ -35,7 +35,7 @@ namespace SFAEndpoint.Controllers
             sboConnection.connectSBO();
 
             var connection = new HanaConnection(_connectionStringHana);
-
+            List<InsertLog> listLog = new List<InsertLog>();
             string itemCode = "";
             string itemName = "";
             string sfaRefNum = "";
@@ -507,11 +507,15 @@ namespace SFAEndpoint.Controllers
                             }
                             else
                             {
-                                string objectLog = "AR CREDIT MEMO - ADD";
-                                string status = "SUCCESS";
-                                string errorMsg = "";
+                                var logData = new InsertLog
+                                {
+                                    objectLog = "AR CREDIT MEMO - ADD",
+                                    status = "SUCCESS",
+                                    errorMessage = "",
+                                    sfaRefNumber = sfaRefNum
+                                };
 
-                                log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+                                listLog.Add(logData);
 
                                 if (oCreditMemo != null)
                                 {
@@ -623,12 +627,16 @@ namespace SFAEndpoint.Controllers
                             }
                             else
                             {
-                                string objectLog = "AR CREDIT MEMO BASED AR INV - ADD";
-                                string status = "SUCCESS";
-                                string errorMsg = "";
+                                var logData = new InsertLog
+                                {
+                                    objectLog = "AR CREDIT MEMO BASED AR INV - ADD",
+                                    status = "SUCCESS",
+                                    errorMessage = "",
+                                    sfaRefNumber = sfaRefNum
+                                };
 
-                                log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber); 
-                                
+                                listLog.Add(logData);
+
                                 if (oCreditMemo != null)
                                 {
                                     System.Runtime.InteropServices.Marshal.FinalReleaseComObject(oCreditMemo);
@@ -736,11 +744,15 @@ namespace SFAEndpoint.Controllers
                             }
                             else
                             {
-                                string objectLog = "RETURN - ADD";
-                                string status = "SUCCESS";
-                                string errorMsg = "";
+                                var logData = new InsertLog
+                                {
+                                    objectLog = "RETURN - ADD",
+                                    status = "SUCCESS",
+                                    errorMessage = "",
+                                    sfaRefNumber = sfaRefNum
+                                };
 
-                                log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+                                listLog.Add(logData);
 
                                 if (oReturn != null)
                                 {
@@ -797,6 +809,11 @@ namespace SFAEndpoint.Controllers
                     }
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
+
+                foreach (var dataLog in listLog)
+                {
+                    log.insertLog(dataLog.objectLog, dataLog.status, dataLog.errorMessage, dataLog.sfaRefNumber);
+                }
 
                 if (sboConnection.oCompany != null)
                 {

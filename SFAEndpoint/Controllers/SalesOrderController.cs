@@ -165,7 +165,7 @@ namespace SFAEndpoint.Controllers
             string whsCode = "";
             string kodeCabang = "";
             string sfaRefNum = "";
-
+            List<InsertLog> listLog = new List<InsertLog>();
             SAPbobsCOM.Documents oSales = sboConnection.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oOrders);
 
             try
@@ -386,15 +386,24 @@ namespace SFAEndpoint.Controllers
                     }
                     else
                     {
-                        string objectLog = "SO - ADD";
-                        string status = "SUCCESS";
-                        string errorMsg = "";
+                        var logData = new InsertLog
+                        {
+                            objectLog = "SO - ADD",
+                            status = "SUCCESS",
+                            errorMessage = "",
+                            sfaRefNumber = sfaRefNum
+                        };
 
-                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+                        listLog.Add(logData);
                     }
                 }
 
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
+
+                foreach (var dataLog in listLog)
+                {
+                    log.insertLog(dataLog.objectLog, dataLog.status, dataLog.errorMessage, dataLog.sfaRefNumber);
+                }
 
                 if (oSales != null)
                 {

@@ -203,77 +203,77 @@ namespace SFAEndpoint.Controllers
             }
         }
 
-        //[HttpPost("/sapapi/sfaintegration/outlet")]
-        //[Authorize]
-        //public IActionResult GetSpesificOutlet(OutletSpesificParameter parameter)
-        //{
-        //    OutletSpesific outlet = new OutletSpesific();
+        [HttpPost("/sapapi/sfaintegration/outlet")]
+        [Authorize]
+        public IActionResult GetSpesificOutlet(OutletSpesificParameter parameter)
+        {
+            OutletSpesific outlet = new OutletSpesific();
 
-        //    var connection = new HanaConnection(_connectionStringHana);
+            var connection = new HanaConnection(_connectionStringHana);
 
-        //    try
-        //    {
-        //        using (connection)
-        //        {
-        //            connection.Open();
+            try
+            {
+                using (connection)
+                {
+                    connection.Open();
 
-        //            string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_OUTLET_SPESIFIC('" + parameter.kodePelangganSFA + "')";
+                    string queryString = "CALL SOL_SP_ADDON_SFA_INT_MASTER_OUTLET_SPESIFIC('" + parameter.kodePelangganSFA + "')";
 
-        //            using (var command = new HanaCommand(queryString, connection))
-        //            {
-        //                using (var reader = command.ExecuteReader())
-        //                {
-        //                    if (!reader.HasRows)
-        //                    {
-        //                        return StatusCode(StatusCodes.Status404NotFound, new StatusResponse
-        //                        {
-        //                            responseCode = "404",
-        //                            responseMessage = "Outlet not found.",
+                    using (var command = new HanaCommand(queryString, connection))
+                    {
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (!reader.HasRows)
+                            {
+                                return StatusCode(StatusCodes.Status404NotFound, new StatusResponse
+                                {
+                                    responseCode = "404",
+                                    responseMessage = "Outlet not found.",
 
-        //                        });
-        //                    }
-        //                    else
-        //                    {
-        //                        while (reader.Read())
-        //                        {
-        //                            outlet = new OutletSpesific
-        //                            {
-        //                                kodePelangganSFA = reader["kodePelangganSFA"].ToString(),
-        //                                kodePelanggan = reader["kodePelangganSAP"].ToString(),
-        //                                namaPelanggan = reader["namaPelanggan"].ToString()
-        //                            };
-        //                        }
+                                });
+                            }
+                            else
+                            {
+                                while (reader.Read())
+                                {
+                                    outlet = new OutletSpesific
+                                    {
+                                        kodePelangganSFA = reader["kodePelangganSFA"].ToString(),
+                                        kodePelanggan = reader["kodePelangganSAP"].ToString(),
+                                        namaPelanggan = reader["namaPelanggan"].ToString()
+                                    };
+                                }
 
-        //                        data = new Data
-        //                        {
-        //                            data = outlet
-        //                        };
-        //                    }
-        //                }
-        //            }
-        //            connection.Close();
-        //        }
-        //        return Ok(data);
-        //    }
-        //    catch (HanaException hx)
-        //    {
-        //        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
-        //        {
-        //            responseCode = "500",
-        //            responseMessage = "HANA Error: " + hx.Message,
+                                data = new Data
+                                {
+                                    data = outlet
+                                };
+                            }
+                        }
+                    }
+                    connection.Close();
+                }
+                return Ok(data);
+            }
+            catch (HanaException hx)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                {
+                    responseCode = "500",
+                    responseMessage = "HANA Error: " + hx.Message,
 
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
-        //        {
-        //            responseCode = "500",
-        //            responseMessage = ex.Message,
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                {
+                    responseCode = "500",
+                    responseMessage = ex.Message,
 
-        //        });
-        //    }
-        //}
+                });
+            }
+        }
 
         //[HttpPost("/sapapi/sfaintegration/typeoutlet/master/all")]
         //public IActionResult GetAllOutletType()
@@ -435,8 +435,10 @@ namespace SFAEndpoint.Controllers
             sboConnection.connectSBO();
 
             var connectionHana = new HanaConnection(_connectionStringHana);
-
+            List<InsertLog> listLog = new List<InsertLog>();
             string sfaRefNum = "";
+
+            SAPbobsCOM.UserTable table = sboConnection.oCompany.UserTables.Item("SOL_MASTER_OUTLET");
 
             try
             {
@@ -489,13 +491,21 @@ namespace SFAEndpoint.Controllers
 
                     if (duplicateSfaRefNum)
                     {
-                        sboConnection.oCompany.Disconnect();
-
                         string objectLog = "OUTLET - ADD";
                         string status = "ERROR";
                         string errorMsg = "Add Outlet Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", ""); ;
 
                         log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+
+                        if (sboConnection.oCompany != null)
+                        {
+                            if (sboConnection.oCompany.Connected)
+                            {
+                                sboConnection.oCompany.Disconnect();
+                            }
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                            sboConnection.oCompany = null;
+                        }
 
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
@@ -525,9 +535,6 @@ namespace SFAEndpoint.Controllers
                             request.kodePelangganSAP = "";
                         }
 
-                        SAPbobsCOM.Company oCompany = sboConnection.oCompany;
-                        SAPbobsCOM.UserTable table = table = oCompany.UserTables.Item("SOL_MASTER_OUTLET");
-
                         table.UserFields.Fields.Item("U_SOL_CARD_CODE").Value = request.kodePelanggan;
                         table.UserFields.Fields.Item("U_SOL_CARD_CODE_SAP").Value = request.kodePelangganSAP;
                         table.UserFields.Fields.Item("U_SOL_CARD_NAME").Value = request.namaPelanggan;
@@ -550,14 +557,28 @@ namespace SFAEndpoint.Controllers
 
                         if (table.Add() != 0)
                         {
-                            sboConnection.oCompany.Disconnect();
-
                             string objectLog = "OUTLET - ADD";
                             string status = "ERROR";
                             string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
-                            string errorMsg = "Add Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+                            string errorMsg = "Add Outlet Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                             log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                            if (table != null)
+                            {
+                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(table);
+                                table = null;
+                            }
+
+                            if (sboConnection.oCompany != null)
+                            {
+                                if (sboConnection.oCompany.Connected)
+                                {
+                                    sboConnection.oCompany.Disconnect();
+                                }
+                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                sboConnection.oCompany = null;
+                            }
 
                             return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                             {
@@ -568,11 +589,15 @@ namespace SFAEndpoint.Controllers
                         }
                         else
                         {
-                            string objectLog = "OUTLET - ADD";
-                            string status = "SUCCESS";
-                            string errorMsg = "";
+                            var logData = new InsertLog
+                            {
+                                objectLog = "OUTLET - ADD",
+                                status = "SUCCESS",
+                                errorMessage = "",
+                                sfaRefNumber = sfaRefNum
+                            };
 
-                            log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+                            listLog.Add(logData);
 
                             feedback = new FeedbackNOO
                             {
@@ -588,7 +613,26 @@ namespace SFAEndpoint.Controllers
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
-                sboConnection.oCompany.Disconnect();
+                foreach (var dataLog in listLog)
+                {
+                    log.insertLog(dataLog.objectLog, dataLog.status, dataLog.errorMessage, dataLog.sfaRefNumber);
+                }
+
+                if (table != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(table);
+                    table = null;
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 data = new Data
                 {
@@ -602,13 +646,22 @@ namespace SFAEndpoint.Controllers
             }
             catch (Exception ex)
             {
-                sboConnection.oCompany.Disconnect();
-
                 string objectLog = "OUTLET - ADD";
                 string status = "ERROR";
                 string errorMsg = "Add Outlet Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", ""); ;
 
                 log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
+
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {
@@ -630,6 +683,8 @@ namespace SFAEndpoint.Controllers
 
             sboConnection.connectSBO();
 
+            SAPbobsCOM.UserTable table = table = sboConnection.oCompany.UserTables.Item("SOL_MASTER_OUTLET");
+            List<InsertLog> listLog = new List<InsertLog>();
             string sfaRefNum = "";
 
             try
@@ -657,6 +712,16 @@ namespace SFAEndpoint.Controllers
                             {
                                 if (!reader.HasRows)
                                 {
+                                    if (sboConnection.oCompany != null)
+                                    {
+                                        if (sboConnection.oCompany.Connected)
+                                        {
+                                            sboConnection.oCompany.Disconnect();
+                                        }
+                                        System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                        sboConnection.oCompany = null;
+                                    }
+
                                     return StatusCode(StatusCodes.Status404NotFound, new StatusResponse
                                     {
                                         responseCode = "404",
@@ -674,9 +739,6 @@ namespace SFAEndpoint.Controllers
                             }
                         }
                     }
-
-                    SAPbobsCOM.Company oCompany = sboConnection.oCompany;
-                    SAPbobsCOM.UserTable table = table = oCompany.UserTables.Item("SOL_MASTER_OUTLET");
 
 
                     if (table.GetByKey(code))
@@ -696,14 +758,28 @@ namespace SFAEndpoint.Controllers
 
                         if (table.Update() != 0)
                         {
-                            sboConnection.oCompany.Disconnect();
-
                             string objectLog = "OUTLET - UPDATE";
                             string status = "ERROR";
                             string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
-                            string errorMsg = "Update Outlet Failed, " + oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+                            string errorMsg = "Update Outlet Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                             log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                            if (table != null)
+                            {
+                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(table);
+                                table = null;
+                            }
+
+                            if (sboConnection.oCompany != null)
+                            {
+                                if (sboConnection.oCompany.Connected)
+                                {
+                                    sboConnection.oCompany.Disconnect();
+                                }
+                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                sboConnection.oCompany = null;
+                            }
 
                             return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                             {
@@ -714,16 +790,28 @@ namespace SFAEndpoint.Controllers
                         }
                         else
                         {
-                            string objectLog = "OUTLET - UPDATE";
-                            string status = "SUCCESS";
-                            string errorMsg = "";
+                            var logData = new InsertLog
+                            {
+                                objectLog = "OUTLET - UPDATE",
+                                status = "SUCCESS",
+                                errorMessage = "",
+                                sfaRefNumber = sfaRefNum
+                            };
 
-                            log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+                            listLog.Add(logData);
                         }
                     }
                     else
                     {
-                        sboConnection.oCompany.Disconnect();
+                        if (sboConnection.oCompany != null)
+                        {
+                            if (sboConnection.oCompany.Connected)
+                            {
+                                sboConnection.oCompany.Disconnect();
+                            }
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                            sboConnection.oCompany = null;
+                        }
 
                         return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                         {
@@ -735,7 +823,26 @@ namespace SFAEndpoint.Controllers
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
 
-                sboConnection.oCompany.Disconnect();
+                foreach (var dataLog in listLog)
+                {
+                    log.insertLog(dataLog.objectLog, dataLog.status, dataLog.errorMessage, dataLog.sfaRefNumber);
+                }
+
+                if (table != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(table);
+                    table = null;
+                }
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
 
                 return StatusCode(StatusCodes.Status201Created, new StatusResponse
                 {
@@ -746,13 +853,22 @@ namespace SFAEndpoint.Controllers
             }
             catch (Exception ex)
             {
-                sboConnection.oCompany.Disconnect();
-
                 string objectLog = "OUTLET - UPDATE";
                 string status = "ERROR";
                 string errorMsg = "Update Outlet Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
 
                 log.insertLog(objectLog, status, errorMsg, sfaRefNum);
+
+                if (sboConnection.oCompany != null)
+                {
+                    if (sboConnection.oCompany.Connected)
+                    {
+                        sboConnection.oCompany.Disconnect();
+                    }
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                    sboConnection.oCompany = null;
+                }
+
 
                 return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
                 {

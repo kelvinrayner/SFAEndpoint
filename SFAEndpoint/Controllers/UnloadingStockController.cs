@@ -6,8 +6,6 @@ using SFAEndpoint.Models.Parameter;
 using SFAEndpoint.Models;
 using SFAEndpoint.Services;
 using Sap.Data.Hana;
-using System.Reflection.Metadata;
-using System.Security.Cryptography;
 
 namespace SFAEndpoint.Controllers
 {
@@ -33,6 +31,7 @@ namespace SFAEndpoint.Controllers
             sboConnection.connectSBO();
 
             var connection = new HanaConnection(_connectionStringHana);
+            List<InsertLog> listLog = new List<InsertLog>();
 
             string sfaRefNum = "";
             string whsCode = "";
@@ -181,14 +180,23 @@ namespace SFAEndpoint.Controllers
                     }
                     else
                     {
-                        string objectLog = "UNLOADING STOCK - ADD";
-                        string status = "SUCCESS";
-                        string errorMsg = "";
+                        var logData = new InsertLog
+                        {
+                            objectLog = "UNLOADING STOCK - ADD",
+                            status = "SUCCESS",
+                            errorMessage = "",
+                            sfaRefNumber = sfaRefNum
+                        };
 
-                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+                        listLog.Add(logData);
                     }
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
+
+                foreach (var dataLog in listLog)
+                {
+                    log.insertLog(dataLog.objectLog, dataLog.status, dataLog.errorMessage, dataLog.sfaRefNumber);
+                }
 
                 if (oIT != null)
                 {
@@ -249,5 +257,63 @@ namespace SFAEndpoint.Controllers
                 });
             }
         }
+
+        //[HttpPost("/sapapi/sfaintegration/unloadingstock/new")]
+        //public async Task<IActionResult> UnloadingStock([FromBody] List<UnloadingStockParameter> requests)
+        //{
+
+        //    UnloadingStockParameter headerUnloading = new UnloadingStockParameter();
+        //    UnloadingStockDetailParameter detailUnloading = new UnloadingStockDetailParameter();
+        //    List<UnloadingStockParameter> listHeader = new List<UnloadingStockParameter>();
+
+        //    try
+        //    {
+        //        foreach (var request in requests)
+        //        {
+        //            List<UnloadingStockDetailParameter> listDetail = new List<UnloadingStockDetailParameter>();
+
+        //            foreach (var detail in request.detail)
+        //            {
+        //                detailUnloading = new UnloadingStockDetailParameter
+        //                {
+        //                    kodeProdukPrincipal = detail.kodeProdukPrincipal,
+        //                    quantity = detail.quantity
+        //                };
+        //                listDetail.Add(detailUnloading);
+        //            }
+
+        //            headerUnloading = new UnloadingStockParameter
+        //            {
+        //                salesCode = request.salesCode,
+        //                fromWarehouse = request.fromWarehouse,
+        //                toWarehouse = request.toWarehouse,
+        //                sfaRefrenceNumber = request.sfaRefrenceNumber,
+        //                detail = listDetail
+        //            };
+
+        //            listHeader.Add(headerUnloading);
+        //        }
+
+        //        var requestData = listHeader;
+
+        //        var content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
+        //        HttpResponseMessage response = await _httpClient.PostAsync("http://192.168.1.92:81/sapapi/unloadingstock/new", content);
+        //        //response.EnsureSuccessStatusCode();
+
+        //        string responseString = await response.Content.ReadAsStringAsync();
+        //        var jsonObj = System.Text.Json.JsonSerializer.Deserialize<JsonElement>(responseString);
+
+        //        return StatusCode((int)response.StatusCode, jsonObj);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+        //        {
+        //            responseCode = "500",
+        //            responseMessage = ex.Message,
+
+        //        }); ;
+        //    }
+        //}
     }
 }

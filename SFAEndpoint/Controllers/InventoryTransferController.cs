@@ -31,6 +31,7 @@ namespace SFAEndpoint.Controllers
             sboConnection.connectSBO();
 
             var connection = new HanaConnection(_connectionStringHana);
+            List<InsertLog> listLog = new List<InsertLog>();
 
             string sfaRefNum = "";
 
@@ -201,14 +202,23 @@ namespace SFAEndpoint.Controllers
                     }
                     else
                     {
-                        string objectLog = "IT - ADD";
-                        string status = "SUCCESS";
-                        string errorMsg = "";
+                        var logData = new InsertLog
+                        {
+                            objectLog = "IT - ADD",
+                            status = "SUCCESS",
+                            errorMessage = "",
+                            sfaRefNumber = sfaRefNum
+                        };
 
-                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+                        listLog.Add(logData);
                     }
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
+
+                foreach (var dataLog in listLog)
+                {
+                    log.insertLog(dataLog.objectLog, dataLog.status, dataLog.errorMessage, dataLog.sfaRefNumber);
+                }
 
                 if (oIT != null)
                 {
