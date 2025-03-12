@@ -63,7 +63,7 @@ namespace SFAEndpoint.Controllers
                                     {
                                         kodeCustomer = reader["kodeCustomer"].ToString(),
                                         noInvoiceERP = reader["noInvoiceERP"].ToString(),
-                                        tanggalInvoice = Convert.ToDateTime(reader["tanggalInvoice"]),
+                                        tanggalInvoice = reader["tanggalInvoice"].ToString(),
                                         invoiceAmount = Convert.ToDecimal(reader["invoiceAmount"]),
                                         docEntryARInvSAP = reader["docEntryARInvSAP"].ToString(),
                                         sfaRefrenceNumber = reader["sfaRefrenceNumber"].ToString()

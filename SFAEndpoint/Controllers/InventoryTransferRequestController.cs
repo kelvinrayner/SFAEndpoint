@@ -95,7 +95,7 @@ namespace SFAEndpoint.Controllers
                                     {
                                         docEntrySAP = docEntry,
                                         docNumSAP = reader["docnumSAP"].ToString(),
-                                        docDate = Convert.ToDateTime(reader["docDate"]),
+                                        docDate = reader["docDate"].ToString(),
                                         salesCode = Convert.ToInt32(reader["salesCode"]),
                                         sfaRefrenceNumber = reader["sfaRefrenceNumber"].ToString(),
                                         detail = listInventoryTransferRequestDetail

@@ -72,7 +72,10 @@ namespace SFAEndpoint.Controllers
                                         kodeGroupHarga = reader["kodeGroupHarga"].ToString(),
                                         defaultTypePembayaran = reader["defaultTypePembayaran"].ToString(),
                                         flagOutletRegister = reader["flagOutletRegister"].ToString(),
-                                        kodeDistributor = reader["kodeDistributor"].ToString()
+                                        kodeDistributor = reader["kodeDistributor"].ToString(),
+                                        totalPlafondCredit = Convert.ToDecimal(reader["totalPlafondCredit"]),
+                                        totalOutstandingInvoice = Convert.ToDecimal(reader["totalOutstandingInvoice"]),
+                                        sisaKreditLimit = Convert.ToDecimal(reader["sisaKreditLimit"])
                                     };
 
                                     listOutlet.Add(outlet);
@@ -166,7 +169,10 @@ namespace SFAEndpoint.Controllers
                                         kodeGroupHarga = reader["kodeGroupHarga"].ToString(),
                                         defaultTypePembayaran = reader["defaultTypePembayaran"].ToString(),
                                         flagOutletRegister = reader["flagOutletRegister"].ToString(),
-                                        kodeDistributor = reader["kodeDistributor"].ToString()
+                                        kodeDistributor = reader["kodeDistributor"].ToString(),
+                                        totalPlafondCredit = Convert.ToDecimal(reader["totalPlafondCredit"]),
+                                        totalOutstandingInvoice = Convert.ToDecimal(reader["totalOutstandingInvoice"]),
+                                        sisaKreditLimit = Convert.ToDecimal(reader["sisaKreditLimit"])
                                     };
 
                                     listOutlet.Add(outlet);
@@ -712,22 +718,68 @@ namespace SFAEndpoint.Controllers
                             {
                                 if (!reader.HasRows)
                                 {
-                                    if (sboConnection.oCompany != null)
+                                    if (request.alamatPelanggan != "")
                                     {
-                                        if (sboConnection.oCompany.Connected)
-                                        {
-                                            sboConnection.oCompany.Disconnect();
-                                        }
-                                        System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
-                                        sboConnection.oCompany = null;
+                                        table.UserFields.Fields.Item("U_SOL_STREET").Value = request.alamatPelanggan;
+                                    }
+                                    if (request.telphonePic != "")
+                                    {
+                                        table.UserFields.Fields.Item("U_SOL_TELP_PIC").Value = request.telphonePic;
+                                    }
+                                    if (request.emailCustomer != "")
+                                    {
+                                        table.UserFields.Fields.Item("U_SOL_EMAIL_CUSTOMER").Value = request.emailCustomer;
                                     }
 
-                                    return StatusCode(StatusCodes.Status404NotFound, new StatusResponse
-                                    {
-                                        responseCode = "404",
-                                        responseMessage = "UDT Code not found.",
+                                    table.UserFields.Fields.Item("U_SOL_STREET").Value = request.alamatPelanggan;
+                                    table.UserFields.Fields.Item("U_SOL_TELP_PIC").Value = request.telphonePic;
+                                    table.UserFields.Fields.Item("U_SOL_EMAIL_CUSTOMER").Value = request.emailCustomer;
+                                    table.UserFields.Fields.Item("U_SOL_SFA_REF_NUM").Value = request.sfaRefrenceNumber;
 
-                                    });
+                                    if (table.Add() != 0)
+                                    {
+                                        string objectLog = "OUTLET EXISTING - ADD";
+                                        string status = "ERROR";
+                                        string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+                                        string errorMsg = "Add Outlet Existing Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                                        log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                                        if (table != null)
+                                        {
+                                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(table);
+                                            table = null;
+                                        }
+
+                                        if (sboConnection.oCompany != null)
+                                        {
+                                            if (sboConnection.oCompany.Connected)
+                                            {
+                                                sboConnection.oCompany.Disconnect();
+                                            }
+                                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                            sboConnection.oCompany = null;
+                                        }
+
+                                        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                                        {
+                                            responseCode = "500",
+                                            responseMessage = errorResponse.Length > 255 ? errorResponse.Substring(0, 255) : errorResponse,
+
+                                        });
+                                    }
+                                    else
+                                    {
+                                        var logData = new InsertLog
+                                        {
+                                            objectLog = "OUTLET EXISTING - ADD",
+                                            status = "SUCCESS",
+                                            errorMessage = "",
+                                            sfaRefNumber = sfaRefNum
+                                        };
+
+                                        listLog.Add(logData);
+                                    }
                                 }
                                 else
                                 {
@@ -735,90 +787,89 @@ namespace SFAEndpoint.Controllers
                                     {
                                         code = reader["Code"].ToString();
                                     }
+
+                                    if (table.GetByKey(code))
+                                    {
+                                        if (request.alamatPelanggan != "")
+                                        {
+                                            table.UserFields.Fields.Item("U_SOL_STREET").Value = request.alamatPelanggan;
+                                        }
+                                        if (request.telphonePic != "")
+                                        {
+                                            table.UserFields.Fields.Item("U_SOL_TELP_PIC").Value = request.telphonePic;
+                                        }
+                                        if (request.emailCustomer != "")
+                                        {
+                                            table.UserFields.Fields.Item("U_SOL_EMAIL_CUSTOMER").Value = request.emailCustomer;
+                                        }
+
+                                        if (table.Update() != 0)
+                                        {
+                                            string objectLog = "OUTLET - UPDATE";
+                                            string status = "ERROR";
+                                            string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+                                            string errorMsg = "Update Outlet Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
+
+                                            log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
+
+                                            if (table != null)
+                                            {
+                                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(table);
+                                                table = null;
+                                            }
+
+                                            if (sboConnection.oCompany != null)
+                                            {
+                                                if (sboConnection.oCompany.Connected)
+                                                {
+                                                    sboConnection.oCompany.Disconnect();
+                                                }
+                                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                                sboConnection.oCompany = null;
+                                            }
+
+                                            return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                                            {
+                                                responseCode = "500",
+                                                responseMessage = errorResponse.Length > 255 ? errorResponse.Substring(0, 255) : errorResponse,
+
+                                            });
+                                        }
+                                        else
+                                        {
+                                            var logData = new InsertLog
+                                            {
+                                                objectLog = "OUTLET - UPDATE",
+                                                status = "SUCCESS",
+                                                errorMessage = "",
+                                                sfaRefNumber = sfaRefNum
+                                            };
+
+                                            listLog.Add(logData);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (sboConnection.oCompany != null)
+                                        {
+                                            if (sboConnection.oCompany.Connected)
+                                            {
+                                                sboConnection.oCompany.Disconnect();
+                                            }
+                                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
+                                            sboConnection.oCompany = null;
+                                        }
+
+                                        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
+                                        {
+                                            responseCode = "500",
+                                            responseMessage = "UDT Code not valid.",
+
+                                        });
+                                    }
                                 }
                             }
                         }
-                    }
-
-
-                    if (table.GetByKey(code))
-                    {
-                        if (request.alamatPelanggan != "")
-                        {
-                            table.UserFields.Fields.Item("U_SOL_STREET").Value = request.alamatPelanggan;
-                        }
-                        if (request.telphonePic != "")
-                        {
-                            table.UserFields.Fields.Item("U_SOL_TELP_PIC").Value = request.telphonePic;
-                        }
-                        if (request.emailCustomer != "")
-                        {
-                            table.UserFields.Fields.Item("U_SOL_EMAIL_CUSTOMER").Value = request.emailCustomer;
-                        }
-
-                        if (table.Update() != 0)
-                        {
-                            string objectLog = "OUTLET - UPDATE";
-                            string status = "ERROR";
-                            string errorResponse = sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
-                            string errorMsg = "Update Outlet Failed, " + sboConnection.oCompany.GetLastErrorDescription().Replace("'", "").Replace("\"", "");
-
-                            log.insertLog(objectLog, status, errorMsg, request.sfaRefrenceNumber);
-
-                            if (table != null)
-                            {
-                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(table);
-                                table = null;
-                            }
-
-                            if (sboConnection.oCompany != null)
-                            {
-                                if (sboConnection.oCompany.Connected)
-                                {
-                                    sboConnection.oCompany.Disconnect();
-                                }
-                                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
-                                sboConnection.oCompany = null;
-                            }
-
-                            return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
-                            {
-                                responseCode = "500",
-                                responseMessage = errorResponse.Length > 255 ? errorResponse.Substring(0, 255) : errorResponse,
-
-                            });
-                        }
-                        else
-                        {
-                            var logData = new InsertLog
-                            {
-                                objectLog = "OUTLET - UPDATE",
-                                status = "SUCCESS",
-                                errorMessage = "",
-                                sfaRefNumber = sfaRefNum
-                            };
-
-                            listLog.Add(logData);
-                        }
-                    }
-                    else
-                    {
-                        if (sboConnection.oCompany != null)
-                        {
-                            if (sboConnection.oCompany.Connected)
-                            {
-                                sboConnection.oCompany.Disconnect();
-                            }
-                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(sboConnection.oCompany);
-                            sboConnection.oCompany = null;
-                        }
-
-                        return StatusCode(StatusCodes.Status500InternalServerError, new StatusResponse
-                        {
-                            responseCode = "500",
-                            responseMessage = "UDT Code not valid.",
-
-                        });
                     }
                 }
                 sboConnection.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);

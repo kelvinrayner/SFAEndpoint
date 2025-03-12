@@ -13,5 +13,8 @@
         public string defaultTypePembayaran { get; set; }
         public string flagOutletRegister { get; set; }
         public string kodeDistributor { get; set; }
+        public decimal totalPlafondCredit { get; set; }
+		public decimal totalOutstandingInvoice { get; set; }
+	    public decimal sisaKreditLimit { get; set; }
     }
 }
